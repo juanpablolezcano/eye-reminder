@@ -97,14 +97,17 @@ on first run.
 | `breakSeconds` | `20` | how long the card stays up |
 | `countdownSeconds` | `3` | 3, 2, 1 heads-up before the break; `0` skips it |
 | `showStartupNotice` | `true` | "running in the background" card at launch |
+| `pauseWhenFullscreen` | `true` | hold the reminder during full screen, presentations and Focus Assist |
+| `hideFromScreenShare` | `true` | keep the card out of screen captures and shares |
 | `pauseWhenIdle` | `true` | pause while there is no keyboard or mouse input |
 | `idleMinutes` | `5` | minutes of inactivity before pausing |
 | `language` | `auto` | language code, or `auto` to follow Windows |
 | `titleOverride` | `""` | overrides the language's title |
 | `countdownOverride` | `""` | overrides the countdown text |
 | `messageOverride` | `""` | overrides the break message |
-| `theme` | `Dark` | `Dark`, `Light`, `Warm`, `Minimal` |
+| `theme` | `Dark` | `Dark`, `Light`, `Warm`, `Minimal`, or one of your own |
 | `accentColor` | `""` | hex override for the theme accent, e.g. `#E894B4` |
+| `animation` | `Fade` | `Fade`, `Slide`, `Scale`, `None` |
 | `position` | `TopCenter` | `TopCenter`, `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Center` |
 | `scale` | `1.0` | card size (0.7 to 2.0) |
 | `allScreens` | `false` | show it on every monitor |
@@ -119,6 +122,47 @@ so you can try a style, position and size before committing.
 
 A missing or malformed file falls back to the defaults.
 
+## Staying out of the way
+
+Two settings under **Privacy** keep the card from turning up at the wrong moment.
+
+**Do not show during full screen or a presentation** asks the shell what the user
+is doing, through `SHQueryUserNotificationState`. The reminder is held back while
+an app is full screen, a Direct3D game is running, presentation mode is on, or
+Focus Assist is silencing notifications, and it resumes the moment that ends.
+
+**Hide from screen captures and shares** calls `SetWindowDisplayAffinity` with
+`WDA_EXCLUDEFROMCAPTURE`. The compositor then refuses to hand the card's pixels
+to any capture, so it is absent from a Discord or Teams share, from OBS, and from
+screenshots. You still see it on your own screen.
+
+> That needs Windows 10 2004 or newer. On anything older the call fails, a line
+> goes into `log.txt`, and the card behaves normally.
+
+## Themes
+
+`theme` names an entry in [Themes/themes.json](Themes/themes.json). Copy that file
+into `%APPDATA%\EyeReminder\` and it replaces the built-in set, which is how you
+add your own:
+
+```json
+{
+  "id": "Midnight",
+  "label": "Midnight",
+  "background": "#F00B1020", "border": "#2E6C7BFF", "title": "#FFEAF0FF",
+  "message": "#B0EAF0FF", "accent": "#FF8AA0FF", "track": "#266C7BFF"
+}
+```
+
+Colours are `#AARRGGBB`, so the leading pair is opacity. Use `labelKey` instead of
+`label` to name a translated caption; a plain `label` shows as typed in every
+language. Any field you leave out falls back to the dark theme's value.
+
+The theme reaches the tray as well: the right-click menu is painted with the same
+palette, and the tray icon is drawn in the accent colour. The icon is not an SVG,
+it is drawn with GDI+ at runtime in [EyeIcon.cs](EyeIcon.cs), which is why it can
+be recoloured without shipping an asset.
+
 ## Startup notice
 
 Because the app starts with no window at all, it shows the reminder card for five
@@ -127,6 +171,16 @@ is due. It is not a Windows notification; it is the same card,
 silent, and it fades out on its own.
 
 Turn it off with **Show a notice at startup**, or `"showStartupNotice": false`.
+
+Launching the app while it is already running shows the same card, rather than the
+second copy exiting without a word. The two instances find each other through a
+named event, so the running one does the talking.
+
+## Animations
+
+`animation` picks how the card arrives and leaves: **Fade**, **Slide**, **Scale**
+or **None**. Slide takes its direction from where the card sits, so one anchored
+at the bottom rises into view instead of dropping in from above.
 
 ## Languages and text
 
@@ -158,6 +212,12 @@ language). Changing the language retranslates the open window in place.
 Both files sit in `Languages/` and are embedded into the assembly at build time,
 so a single-file build carries every language with nothing extra to ship.
 [OverlayText.cs](OverlayText.cs) and [Ui.cs](Ui.cs) hold only the lookup logic.
+
+A copy dropped in `%APPDATA%\EyeReminder\` wins over the embedded one, the same way
+themes do, so a translation can be fixed or a language added without rebuilding.
+
+A copy dropped in `%APPDATA%yeReminder` wins over the embedded one, the same
+way themes work, so a translation can be fixed without rebuilding.
 
 `overlay.json` is a flat list, one object per language:
 
@@ -235,6 +295,19 @@ MP3. Convert with `ffmpeg -i in.mp3 -acodec pcm_s16le -ar 44100 out.wav`.
 Free sources: [Pixabay](https://pixabay.com/sound-effects/search/notification/),
 [Mixkit](https://mixkit.co/free-sound-effects/notification/),
 [Freesound](https://freesound.org/search/?q=soft+chime&f=type:wav).
+
+## Releases
+
+Pushing a tag builds and publishes automatically
+([.github/workflows/release.yml](.github/workflows/release.yml)):
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+That produces the self-contained single file, strips everything but the `.exe`, and
+attaches it to a GitHub release. Every push to `main` also gets a plain build check.
 
 ## Licence
 

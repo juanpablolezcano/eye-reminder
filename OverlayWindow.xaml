@@ -43,6 +43,7 @@
     </Window.Resources>
 
     <Border x:Name="Card"
+            RenderTransformOrigin="0.5,0.5"
             Margin="28"
             CornerRadius="18"
             Padding="26,20,30,20"
@@ -50,9 +51,17 @@
             BorderBrush="#2EFFFFFF"
             BorderThickness="1">
 
+        <!-- LayoutTransform is the user's size setting; RenderTransform is the entry animation. -->
         <Border.LayoutTransform>
             <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1"/>
         </Border.LayoutTransform>
+
+        <Border.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="EntryScale" ScaleX="1" ScaleY="1"/>
+                <TranslateTransform x:Name="EntrySlide" X="0" Y="0"/>
+            </TransformGroup>
+        </Border.RenderTransform>
 
         <Border.Effect>
             <DropShadowEffect BlurRadius="34" ShadowDepth="6" Direction="270" Opacity="0.55" Color="#000000"/>

@@ -1,0 +1,57 @@
+name: Release
+
+# Push a tag to cut a release:
+#   git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish, e.g. v1.0.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Self-contained, so whoever downloads it needs no .NET runtime installed.
+      - name: Publish
+        run: >
+          dotnet publish -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o release --nologo
+
+      # Only the executable ships. settings.json is recreated in %APPDATA% on first run,
+      # and the reminder sound is not redistributed, so the built-in chime takes over.
+      - name: Keep only the executable
+        run: |
+          Remove-Item release\*.pdb -ErrorAction SilentlyContinue
+          Remove-Item release\settings.json -ErrorAction SilentlyContinue
+          Remove-Item release\notification.wav -ErrorAction SilentlyContinue
+          Get-ChildItem release
+
+      - name: Create the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: release/EyeReminder.exe
+          generate_release_notes: true
+          body: |
+            Download `EyeReminder.exe` and run it. Nothing to install: the .NET runtime is
+            bundled. It lives in the system tray; double-click the icon for settings.
+
+            Windows SmartScreen will warn on first run because the binary is unsigned:
+            click **More info**, then **Run anyway**.

@@ -11,8 +11,8 @@ namespace EyeReminder;
 /// </summary>
 internal static class Chime
 {
-    private static byte[]? _cachedWav;
-    private static double _cachedVolume = -1;
+    private static SoundPlayer? _chimePlayer;
+    private static double _chimeVolume = -1;
 
     private static SoundPlayer? _filePlayer;
     private static string? _filePlayerPath;
@@ -57,13 +57,22 @@ internal static class Chime
             // Falls through to the built-in chime when the file is missing.
         }
 
-        if (_cachedWav is null || Math.Abs(_cachedVolume - settings.SoundVolume) > 0.001)
+        // Built once and reused. Load() copies the samples out, so the player keeps working
+        // after the stream is gone, and no SoundPlayer is left for the finaliser each break.
+        if (_chimePlayer is null || Math.Abs(_chimeVolume - settings.SoundVolume) > 0.001)
         {
-            _cachedWav = GenerateChime(settings.SoundVolume);
-            _cachedVolume = settings.SoundVolume;
+            var wav = GenerateChime(settings.SoundVolume);
+
+            using var samples = new MemoryStream(wav, writable: false);
+            var player = new SoundPlayer(samples);
+            player.Load();
+
+            _chimePlayer?.Dispose();
+            _chimePlayer = player;
+            _chimeVolume = settings.SoundVolume;
         }
 
-        return new SoundPlayer(new MemoryStream(_cachedWav, writable: false));
+        return _chimePlayer;
     }
 
     // ---- synthesis --------------------------------------------------------

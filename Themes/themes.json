@@ -1,0 +1,60 @@
+{
+  "_comment": [
+    "Drop a copy of this file in %APPDATA%\\EyeReminder\\ to change or add themes",
+    "without rebuilding. Colours are #AARRGGBB; the leading pair is opacity.",
+    "labelKey names a translated caption; use label instead for a literal name."
+  ],
+
+  "themes": [
+    {
+      "id": "Dark",
+      "labelKey": "theme.dark",
+      "background": "#F0121418",
+      "border": "#2EFFFFFF",
+      "title": "#FFFFFFFF",
+      "message": "#B4FFFFFF",
+      "accent": "#FF7FD4C4",
+      "track": "#26FFFFFF"
+    },
+    {
+      "id": "Light",
+      "labelKey": "theme.light",
+      "background": "#FAF9FAFC",
+      "border": "#1A000000",
+      "title": "#FF16181D",
+      "message": "#A616181D",
+      "accent": "#FF10998A",
+      "track": "#1A000000"
+    },
+    {
+      "id": "Warm",
+      "labelKey": "theme.warm",
+      "background": "#F21B1410",
+      "border": "#2EFFD9A0",
+      "title": "#FFFDF4E6",
+      "message": "#B0FDF4E6",
+      "accent": "#FFE0A458",
+      "track": "#26FFD9A0"
+    },
+    {
+      "id": "Minimal",
+      "labelKey": "theme.minimal",
+      "background": "#A6000000",
+      "border": "#00FFFFFF",
+      "title": "#FFFFFFFF",
+      "message": "#A0FFFFFF",
+      "accent": "#FFFFFFFF",
+      "track": "#26FFFFFF"
+    }
+  ],
+
+  "accents": [
+    { "labelKey": "accent.theme",  "hex": "" },
+    { "labelKey": "accent.teal",   "hex": "#7FD4C4" },
+    { "labelKey": "accent.blue",   "hex": "#7FB2F0" },
+    { "labelKey": "accent.amber",  "hex": "#E8B473" },
+    { "labelKey": "accent.rose",   "hex": "#E894B4" },
+    { "labelKey": "accent.green",  "hex": "#9BD47F" },
+    { "labelKey": "accent.violet", "hex": "#B79BE8" }
+  ]
+}

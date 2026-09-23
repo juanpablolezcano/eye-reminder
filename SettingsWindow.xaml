@@ -312,6 +312,9 @@
                 <TextBlock x:Name="LblAccent" Style="{StaticResource L}" Margin="0,10,0,8"/>
                 <WrapPanel x:Name="AccentPanel"/>
 
+                <TextBlock x:Name="LblAnimation" Style="{StaticResource L}" Margin="0,10,0,8"/>
+                <WrapPanel x:Name="AnimationPanel"/>
+
                 <TextBlock x:Name="SecPosition" Style="{StaticResource H}"/>
                 <WrapPanel x:Name="PositionPanel"/>
                 <CheckBox x:Name="AllScreensCheck" Style="{StaticResource Check}" Margin="0,6,0,0"/>
@@ -383,6 +386,12 @@
                             Margin="8,0,0,0"/>
                 </Grid>
                 <TextBlock x:Name="HintSound" Style="{StaticResource Hint}"/>
+
+                <TextBlock x:Name="SecPrivacy" Style="{StaticResource H}"/>
+                <CheckBox x:Name="FullscreenCheck" Style="{StaticResource Check}"/>
+                <TextBlock x:Name="HintFullscreen" Style="{StaticResource Hint}"/>
+                <CheckBox x:Name="CaptureCheck" Style="{StaticResource Check}" Margin="0,14,0,0"/>
+                <TextBlock x:Name="HintCapture" Style="{StaticResource Hint}"/>
 
                 <TextBlock x:Name="SecSystem" Style="{StaticResource H}"/>
                 <CheckBox x:Name="StartupCheck" Style="{StaticResource Check}"/>

@@ -14,6 +14,9 @@ public partial class App : System.Windows.Application
 {
     private static Mutex? _singleInstance;
 
+    /// <summary>A second launch sets this; the running instance answers by showing its card.</summary>
+    private static readonly string WakeEventName = AppInfo.SingleInstanceMutex + ".Wake";
+
     /// <summary>Command line switch that opens the settings window on launch.</summary>
     private const string SettingsArgument = "--settings";
 
@@ -28,6 +31,8 @@ public partial class App : System.Windows.Application
 
     private Settings _settings = new();
     private WF.NotifyIcon? _tray;
+    private EventWaitHandle? _wake;
+    private RegisteredWaitHandle? _wakeRegistration;
     private SettingsWindow? _settingsWindow;
 
     private DateTime _nextReminder;
@@ -46,9 +51,14 @@ public partial class App : System.Windows.Application
         _singleInstance = new Mutex(true, AppInfo.SingleInstanceMutex, out var isFirst);
         if (!isFirst)
         {
+            // Already running. Nudge that instance to say so, instead of dying quietly and
+            // leaving the user wondering whether the double-click did anything.
+            WakeRunningInstance();
             Shutdown();
             return;
         }
+
+        ListenForSecondLaunch();
 
         _settings = Settings.Load();
         Ui.Use(_settings.Language);
@@ -71,17 +81,42 @@ public partial class App : System.Windows.Application
         }
     }
 
+    private static void WakeRunningInstance()
+    {
+        try
+        {
+            if (EventWaitHandle.TryOpenExisting(WakeEventName, out var existing))
+            {
+                using (existing) existing.Set();
+            }
+        }
+        catch (WaitHandleCannotBeOpenedException)
+        {
+            // The first instance is on its way out; nothing to wake.
+        }
+    }
+
+    private void ListenForSecondLaunch()
+    {
+        _wake = new EventWaitHandle(false, EventResetMode.AutoReset, WakeEventName);
+
+        _wakeRegistration = ThreadPool.RegisterWaitForSingleObject(
+            _wake,
+            (_, _) => Dispatcher.BeginInvoke(ShowStartupNotice),
+            state: null,
+            Timeout.Infinite,
+            executeOnlyOnce: false);
+    }
+
     /// <summary>
     /// Tells the user the app is alive, since it otherwise starts with no window at all.
     /// Same card as the reminder, silent, and it fades out by itself.
     /// </summary>
     private void ShowStartupNotice()
     {
-        var screen = WF.Screen.PrimaryScreen ?? WF.Screen.AllScreens[0];
-
         var notice = OverlayWindow.Notice(
             _settings,
-            screen,
+            PrimaryScreen,
             AppInfo.Name,
             OverlayText.Background(_settings),
             seconds: StartupNoticeSeconds);
@@ -103,6 +138,8 @@ public partial class App : System.Windows.Application
             _tray.Dispose();
         }
 
+        _wakeRegistration?.Unregister(null);
+        _wake?.Dispose();
         _singleInstance?.Dispose();
     }
 
@@ -117,6 +154,13 @@ public partial class App : System.Windows.Application
         }
 
         if (IsIdle()) return;
+
+        // A reminder over a shared screen or a game is worse than a late reminder.
+        if (_settings.PauseWhenFullscreen && Win32.ShouldStayQuiet())
+        {
+            DismissAll();
+            return;
+        }
 
         if (!_breakInProgress && DateTime.Now >= _nextReminder)
         {
@@ -158,6 +202,9 @@ public partial class App : System.Windows.Application
         return false;
     }
 
+    /// <summary>PrimaryScreen is nullable in headless or odd display configurations.</summary>
+    private static WF.Screen PrimaryScreen => WF.Screen.PrimaryScreen ?? WF.Screen.AllScreens[0];
+
     private void ScheduleNext()
     {
         _nextReminder = DateTime.Now.AddMinutes(_settings.IntervalMinutes);
@@ -176,9 +223,7 @@ public partial class App : System.Windows.Application
 
         _breakInProgress = true;
 
-        var screens = settings.AllScreens
-            ? WF.Screen.AllScreens
-            : new[] { WF.Screen.PrimaryScreen ?? WF.Screen.AllScreens[0] };
+        var screens = settings.AllScreens ? WF.Screen.AllScreens : new[] { PrimaryScreen };
 
         var pending = screens.Length;
 
@@ -257,15 +302,12 @@ public partial class App : System.Windows.Application
 
     private void ApplySettings(Settings updated)
     {
-        var languageChanged = !string.Equals(_settings.Language, updated.Language, StringComparison.OrdinalIgnoreCase);
-
         _settings = updated;
 
-        if (languageChanged)
-        {
-            Ui.Use(updated.Language);
-            RefreshTray();
-        }
+        Ui.Use(updated.Language);
+
+        // Language, theme and accent all show up in the tray, so just rebuild it.
+        RefreshTray();
 
         // The new interval takes effect from now rather than from the last reminder.
         ScheduleNext();
@@ -275,11 +317,7 @@ public partial class App : System.Windows.Application
 
     private void BuildTray()
     {
-        _tray = new WF.NotifyIcon
-        {
-            Icon = EyeIcon.ForTray(),
-            Visible = true
-        };
+        _tray = new WF.NotifyIcon { Visible = true };
 
         _tray.DoubleClick += (_, _) => OpenSettings();
 
@@ -324,9 +362,17 @@ public partial class App : System.Windows.Application
             pause.Text = _pausedUntil is null ? Ui.T("tray.pause") : Ui.T("tray.resume");
         };
 
-        var previous = _tray.ContextMenuStrip;
+        // The menu and the tray mark both follow the card theme.
+        var palette = Themes.For(_settings);
+        ThemedMenu.Apply(menu, palette);
+
+        var previousMenu = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = menu;
-        previous?.Dispose();
+        previousMenu?.Dispose();
+
+        var previousIcon = _tray.Icon;
+        _tray.Icon = EyeIcon.ForTray(System.Drawing.Color.FromArgb(palette.Accent.A, palette.Accent.R, palette.Accent.G, palette.Accent.B));
+        previousIcon?.Dispose();
 
         _tray.Text = Ui.T("tray.tooltip");
     }

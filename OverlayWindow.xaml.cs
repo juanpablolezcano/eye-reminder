@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using WF = System.Windows.Forms;
@@ -136,8 +137,15 @@ public partial class OverlayWindow : Window
     {
         base.OnSourceInitialized(e);
 
+        var handle = new WindowInteropHelper(this).Handle;
+
         // Must happen before the window is ever shown so it never steals the foreground.
-        Win32.ApplyOverlayStyles(new WindowInteropHelper(this).Handle);
+        Win32.ApplyOverlayStyles(handle);
+
+        if (_settings.HideFromScreenShare && !Win32.ExcludeFromCapture(handle, true))
+        {
+            Log.Write("The compositor refused to exclude the card from screen capture");
+        }
     }
 
     protected override void OnContentRendered(EventArgs e)
@@ -145,7 +153,7 @@ public partial class OverlayWindow : Window
         base.OnContentRendered(e);
 
         PlaceOnScreen();
-        FadeTo(_settings.Opacity, FadeInMs);
+        PlayEntry();
 
         if (_phase == Phase.Break)
         {
@@ -153,6 +161,76 @@ public partial class OverlayWindow : Window
         }
 
         _countdown.Start();
+    }
+
+    // ---- entry and exit ---------------------------------------------------
+
+    private string Animation => OverlayAnimation.Normalise(_settings.Animation);
+
+    private void PlayEntry()
+    {
+        var animation = Animation;
+
+        if (animation == OverlayAnimation.None)
+        {
+            Opacity = _settings.Opacity;
+            return;
+        }
+
+        FadeTo(_settings.Opacity, FadeInMs);
+
+        switch (animation)
+        {
+            case OverlayAnimation.Slide:
+                var from = OverlayAnimation.RisesFromBelow(_settings.Position)
+                    ? OverlayAnimation.SlideDistance
+                    : -OverlayAnimation.SlideDistance;
+
+                Move(EntrySlide, TranslateTransform.YProperty, from, 0, FadeInMs);
+                break;
+
+            case OverlayAnimation.Scale:
+                Move(EntryScale, ScaleTransform.ScaleXProperty, OverlayAnimation.ScaleFrom, 1, FadeInMs);
+                Move(EntryScale, ScaleTransform.ScaleYProperty, OverlayAnimation.ScaleFrom, 1, FadeInMs);
+                break;
+        }
+    }
+
+    private void PlayExit(Action onCompleted)
+    {
+        var animation = Animation;
+
+        if (animation == OverlayAnimation.None)
+        {
+            onCompleted();
+            return;
+        }
+
+        FadeTo(0, FadeOutMs, onCompleted);
+
+        switch (animation)
+        {
+            case OverlayAnimation.Slide:
+                var to = OverlayAnimation.RisesFromBelow(_settings.Position)
+                    ? OverlayAnimation.SlideDistance
+                    : -OverlayAnimation.SlideDistance;
+
+                Move(EntrySlide, TranslateTransform.YProperty, 0, to, FadeOutMs);
+                break;
+
+            case OverlayAnimation.Scale:
+                Move(EntryScale, ScaleTransform.ScaleXProperty, 1, OverlayAnimation.ScaleFrom, FadeOutMs);
+                Move(EntryScale, ScaleTransform.ScaleYProperty, 1, OverlayAnimation.ScaleFrom, FadeOutMs);
+                break;
+        }
+    }
+
+    private static void Move(Animatable target, DependencyProperty property, double from, double to, int milliseconds)
+    {
+        target.BeginAnimation(property, new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(milliseconds))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
     }
 
     private void OnCountdownTick(object? sender, EventArgs e)
@@ -205,7 +283,7 @@ public partial class OverlayWindow : Window
         _closing = true;
 
         _countdown.Stop();
-        FadeTo(0, FadeOutMs, onCompleted: Close);
+        PlayExit(Close);
 
         // Watchdog: if the animation clock never reports completion the window would linger
         // invisible forever and the scheduler would never resume. Force the close.

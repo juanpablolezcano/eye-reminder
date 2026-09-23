@@ -16,7 +16,6 @@ internal static class Win32
     public static readonly IntPtr HWND_TOPMOST = new(-1);
 
     public const uint SWP_NOSIZE       = 0x0001;
-    public const uint SWP_NOMOVE       = 0x0002;
     public const uint SWP_NOACTIVATE   = 0x0010;
     public const uint SWP_SHOWWINDOW   = 0x0040;
 
@@ -82,6 +81,66 @@ internal static class Win32
     public static void PlaceTopMost(IntPtr hWnd, int x, int y)
     {
         SetWindowPos(hWnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    }
+
+    /// <summary>
+    /// What the shell thinks the user is doing. Used to keep the card off the screen while
+    /// something is running full screen, a presentation is on, or notifications are silenced.
+    /// </summary>
+    private enum UserNotificationState
+    {
+        NotPresent = 1,
+        Busy = 2,
+        RunningDirect3dFullScreen = 3,
+        PresentationMode = 4,
+        AcceptsNotifications = 5,
+        QuietTime = 6,
+        RunningWindowsStoreApp = 7
+    }
+
+    [DllImport("shell32.dll")]
+    private static extern int SHQueryUserNotificationState(out UserNotificationState state);
+
+    /// <summary>
+    /// True while a reminder would be an interruption: a full-screen app, a presentation, a
+    /// Direct3D game, or Focus Assist. Any failure answers false, so the reminder still runs.
+    /// </summary>
+    public static bool ShouldStayQuiet()
+    {
+        try
+        {
+            if (SHQueryUserNotificationState(out var state) != 0) return false;
+
+            return state is UserNotificationState.Busy
+                         or UserNotificationState.RunningDirect3dFullScreen
+                         or UserNotificationState.PresentationMode
+                         or UserNotificationState.QuietTime
+                         or UserNotificationState.RunningWindowsStoreApp;
+        }
+        catch (DllNotFoundException)
+        {
+            return false;
+        }
+        catch (EntryPointNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    private const uint WDA_NONE = 0x00000000;
+    private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint affinity);
+
+    /// <summary>
+    /// Asks the compositor to leave this window out of screen captures, so it does not show
+    /// up in a Discord or Teams share. Needs Windows 10 2004 or newer; returns false when
+    /// the OS will not honour it.
+    /// </summary>
+    public static bool ExcludeFromCapture(IntPtr hWnd, bool exclude)
+    {
+        return SetWindowDisplayAffinity(hWnd, exclude ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
     }
 
     [StructLayout(LayoutKind.Sequential)]

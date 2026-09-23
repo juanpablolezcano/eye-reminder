@@ -13,14 +13,15 @@ namespace EyeReminder;
 /// </summary>
 internal static class EyeIcon
 {
-    private static readonly Color Ink = Color.FromArgb(240, 127, 212, 196);
+    private static readonly Color DefaultInk = Color.FromArgb(240, 127, 212, 196);
 
     /// <summary>The drawing is authored on a 32x32 grid and scaled to whatever is asked for.</summary>
     private const float DesignSize = 32f;
 
-    public static Icon ForTray(int size = 32)
+    /// <summary>The tray mark, in the theme accent so it matches the card.</summary>
+    public static Icon ForTray(Color? ink = null, int size = 32)
     {
-        using var bitmap = Draw(size);
+        using var bitmap = Draw(size, ink ?? DefaultInk);
 
         // Copy the handle-backed icon so the GDI handle can be released straight away.
         var handle = bitmap.GetHicon();
@@ -35,9 +36,9 @@ internal static class EyeIcon
         }
     }
 
-    public static BitmapSource ForWindow(int size = 64)
+    public static BitmapSource ForWindow(Color? ink = null, int size = 64)
     {
-        using var bitmap = Draw(size);
+        using var bitmap = Draw(size, ink ?? DefaultInk);
         using var stream = new MemoryStream();
 
         bitmap.Save(stream, ImageFormat.Png);
@@ -53,7 +54,7 @@ internal static class EyeIcon
         return image;
     }
 
-    private static Bitmap Draw(int size)
+    private static Bitmap Draw(int size, Color ink)
     {
         var bitmap = new Bitmap(size, size);
 
@@ -62,8 +63,8 @@ internal static class EyeIcon
         g.Clear(Color.Transparent);
         g.ScaleTransform(size / DesignSize, size / DesignSize);
 
-        using var pen = new Pen(Ink, 2.6f);
-        using var brush = new SolidBrush(Ink);
+        using var pen = new Pen(ink, 2.6f);
+        using var brush = new SolidBrush(ink);
         using var outline = new GraphicsPath();
 
         outline.AddBezier(2, 16, 10, 5, 22, 5, 30, 16);

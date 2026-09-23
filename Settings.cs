@@ -19,6 +19,16 @@ public sealed class Settings
     /// <summary>Show a brief "running in the background" card at launch.</summary>
     public bool ShowStartupNotice { get; set; } = true;
 
+    /// <summary>Hold the reminder while an app is full screen, a presentation is on, or
+    /// notifications are silenced.</summary>
+    public bool PauseWhenFullscreen { get; set; } = true;
+
+    /// <summary>Ask the compositor to leave the card out of screen captures and shares.</summary>
+    public bool HideFromScreenShare { get; set; } = true;
+
+    /// <summary>Fade, Slide, Scale or None.</summary>
+    public string Animation { get; set; } = "Fade";
+
     /// <summary>Pause the schedule while there is no keyboard or mouse input.</summary>
     public bool PauseWhenIdle { get; set; } = true;
 

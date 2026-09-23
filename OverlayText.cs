@@ -55,19 +55,21 @@ internal static class OverlayText
     {
         try
         {
-            using var stream = LanguageResources.Open("overlay.json");
+            using var stream = DataFiles.Open("Languages", "overlay.json");
             if (stream is null) return Builtin;
 
             var file = JsonSerializer.Deserialize<LanguageFile>(stream, JsonOptions);
 
             return file?.Languages is { Length: > 0 } packs ? packs : Builtin;
         }
-        catch (JsonException)
+        catch (JsonException error)
         {
+            Log.Write("overlay.json could not be parsed, falling back to English", error);
             return Builtin;
         }
-        catch (IOException)
+        catch (IOException error)
         {
+            Log.Write("overlay.json could not be read, falling back to English", error);
             return Builtin;
         }
     }

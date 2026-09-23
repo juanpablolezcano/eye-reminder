@@ -64,7 +64,7 @@ internal static class Ui
 
         try
         {
-            using var stream = LanguageResources.Open("ui.json");
+            using var stream = DataFiles.Open("Languages", "ui.json");
             if (stream is null) return packs;
 
             using var document = JsonDocument.Parse(stream);
@@ -78,12 +78,14 @@ internal static class Ui
                 Resolve(code, raw, packs, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             }
         }
-        catch (JsonException)
+        catch (JsonException error)
         {
             // Leave the chrome untranslated rather than stopping the reminder from running.
+            Log.Write("ui.json could not be parsed, the interface will show raw keys", error);
         }
-        catch (IOException)
+        catch (IOException error)
         {
+            Log.Write("ui.json could not be read, the interface will show raw keys", error);
         }
 
         return packs;

@@ -32,11 +32,12 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
 
-        // Same mark as the tray, so the window is recognisable at a glance.
-        Icon = EyeIcon.ForWindow();
-
         // Work on a copy so Cancel leaves the running configuration untouched.
         _working = current.Clone();
+
+        // Same mark as the tray, in the same accent, so the window is recognisable at a glance.
+        var accent = Themes.For(_working).Accent;
+        Icon = EyeIcon.ForWindow(System.Drawing.Color.FromArgb(accent.A, accent.R, accent.G, accent.B));
 
         Ui.Use(_working.Language);
 
@@ -65,12 +66,14 @@ public partial class SettingsWindow : Window
         SecTexts.Text = Ui.T("sec.texts");
         SecSound.Text = Ui.T("sec.sound");
         SecSystem.Text = Ui.T("sec.system");
+        SecPrivacy.Text = Ui.T("sec.privacy");
 
         LblFrequency.Text = Ui.T("lbl.frequency");
         LblBreak.Text = Ui.T("lbl.break");
         LblCountdown.Text = Ui.T("lbl.countdown");
         LblPauseAfter.Text = Ui.T("lbl.pauseAfter");
         LblAccent.Text = Ui.T("lbl.accent");
+        LblAnimation.Text = Ui.T("lbl.animation");
         LblSize.Text = Ui.T("lbl.size");
         LblOpacity.Text = Ui.T("lbl.opacity");
         LblVolume.Text = Ui.T("lbl.volume");
@@ -82,6 +85,8 @@ public partial class SettingsWindow : Window
         HintIdle.Text = Ui.T("hint.idle");
         HintCustomText.Text = Ui.T("hint.customText");
         HintSound.Text = Ui.T("hint.sound");
+        HintFullscreen.Text = Ui.T("hint.fullscreen");
+        HintCapture.Text = Ui.T("hint.capture");
         StartupHint.Text = Ui.T("hint.startup", Environment.ProcessPath);
 
         IdleCheck.Content = Ui.T("chk.idle");
@@ -91,6 +96,8 @@ public partial class SettingsWindow : Window
         SoundFinishCheck.Content = Ui.T("chk.soundEnd");
         CustomTextCheck.Content = Ui.T("chk.customText");
         StartupCheck.Content = Ui.T("chk.startup");
+        FullscreenCheck.Content = Ui.T("chk.fullscreen");
+        CaptureCheck.Content = Ui.T("chk.capture");
 
         BrowseButton.Content = Ui.T("btn.browse");
         TestSoundButton.Content = Ui.T("btn.test");
@@ -110,12 +117,14 @@ public partial class SettingsWindow : Window
         var theme = ReadChip(ThemePanel, "Dark");
         var position = ReadChip(PositionPanel, "TopCenter");
         var accent = ReadChip(AccentPanel, "");
+        var animation = ReadChip(AnimationPanel, OverlayAnimation.Fade);
 
         BuildOptionChips();
 
         SelectChip(ThemePanel, theme);
         SelectChip(PositionPanel, position);
         SelectChip(AccentPanel, accent);
+        SelectChip(AnimationPanel, animation);
 
         ApplyUiText();
         UpdateReadouts();
@@ -147,9 +156,11 @@ public partial class SettingsWindow : Window
         PositionPanel.Children.Clear();
         AccentPanel.Children.Clear();
 
-        foreach (var (id, key) in Themes.All)
+        AnimationPanel.Children.Clear();
+
+        foreach (var theme in Themes.All)
         {
-            AddChip(ThemePanel, "theme", id, Ui.T(key));
+            AddChip(ThemePanel, "theme", theme.Id, theme.Caption);
         }
 
         foreach (var (id, key) in Themes.Positions)
@@ -157,9 +168,16 @@ public partial class SettingsWindow : Window
             AddChip(PositionPanel, "position", id, Ui.T(key));
         }
 
-        foreach (var (key, hex) in Themes.Accents)
+        foreach (var (id, key) in OverlayAnimation.All)
         {
-            var label = Ui.T(key);
+            AddChip(AnimationPanel, "animation", id, Ui.T(key));
+        }
+
+        foreach (var accent in Themes.Accents)
+        {
+            var label = accent.Caption;
+            var hex = accent.Hex;
+
             // Each accent chip carries its own swatch so the colour is picked by sight.
             var content = new StackPanel { Orientation = Orientation.Horizontal };
             content.Children.Add(new Ellipse
@@ -223,11 +241,14 @@ public partial class SettingsWindow : Window
 
         SelectChip(ThemePanel, _working.Theme);
         SelectChip(PositionPanel, _working.Position);
+        SelectChip(AnimationPanel, OverlayAnimation.Normalise(_working.Animation));
         SelectChip(AccentPanel, _working.AccentColor ?? "");
 
         AllScreensCheck.IsChecked = _working.AllScreens;
         IdleCheck.IsChecked = _working.PauseWhenIdle;
         StartupNoticeCheck.IsChecked = _working.ShowStartupNotice;
+        FullscreenCheck.IsChecked = _working.PauseWhenFullscreen;
+        CaptureCheck.IsChecked = _working.HideFromScreenShare;
         SoundCheck.IsChecked = _working.Sound;
         SoundFinishCheck.IsChecked = _working.SoundOnFinish;
         SoundFileBox.Text = _working.SoundFile ?? "";
@@ -321,11 +342,14 @@ public partial class SettingsWindow : Window
 
         result.Theme = ReadChip(ThemePanel, "Dark");
         result.Position = ReadChip(PositionPanel, "TopCenter");
+        result.Animation = ReadChip(AnimationPanel, OverlayAnimation.Fade);
         result.AccentColor = ReadChip(AccentPanel, "");
 
         result.AllScreens = AllScreensCheck.IsChecked == true;
         result.PauseWhenIdle = IdleCheck.IsChecked == true;
         result.ShowStartupNotice = StartupNoticeCheck.IsChecked == true;
+        result.PauseWhenFullscreen = FullscreenCheck.IsChecked == true;
+        result.HideFromScreenShare = CaptureCheck.IsChecked == true;
         result.Sound = SoundCheck.IsChecked == true;
         result.SoundOnFinish = SoundFinishCheck.IsChecked == true;
         result.SoundFile = SoundFileBox.Text.Trim();
