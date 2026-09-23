@@ -27,7 +27,7 @@ public partial class App : System.Windows.Application
 
     /// <summary>
     /// Identifies the current break. A break that gets replaced (by a preview or by
-    /// "Probar ahora") must not run the scheduling logic when its windows finally close.
+    /// "Test now") must not run the scheduling logic when its windows finally close.
     /// </summary>
     private int _breakGeneration;
 

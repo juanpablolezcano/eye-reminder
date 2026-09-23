@@ -247,8 +247,9 @@ public partial class SettingsWindow : Window
 
         RefreshTextPreview();
 
+        // Only the state here: the caption below it is set by ApplyUiText, which must not
+        // be undone by a hardcoded string.
         StartupCheck.IsChecked = StartupManager.IsEnabled();
-        StartupHint.Text = $"Se registrará: {Environment.ProcessPath}";
 
         UpdateReadouts();
     }
