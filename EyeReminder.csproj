@@ -9,11 +9,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>EyeReminder</AssemblyName>
     <RootNamespace>EyeReminder</RootNamespace>
-    <ApplicationIcon></ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,5 +1,4 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
@@ -7,17 +6,28 @@ using WF = System.Windows.Forms;
 
 namespace EyeReminder;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage(
+    "Reliability", "CA1001:Types that own disposable fields should be disposable",
+    Justification = "The tray icon lives as long as the process and is disposed in OnExit. " +
+                    "Application has no Dispose for the framework to call.")]
 public partial class App : System.Windows.Application
 {
     private static Mutex? _singleInstance;
 
-    private readonly DispatcherTimer _ticker = new() { Interval = TimeSpan.FromSeconds(1) };
+    /// <summary>Command line switch that opens the settings window on launch.</summary>
+    private const string SettingsArgument = "--settings";
+
+    /// <summary>How long the "running in the background" card stays up at launch.</summary>
+    private const int StartupNoticeSeconds = 5;
+
+    private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan ManualPause = TimeSpan.FromHours(1);
+
+    private readonly DispatcherTimer _ticker = new() { Interval = TickInterval };
     private readonly List<OverlayWindow> _overlays = new();
 
     private Settings _settings = new();
     private WF.NotifyIcon? _tray;
-    private WF.ToolStripMenuItem? _statusItem;
-    private WF.ToolStripMenuItem? _pauseItem;
     private SettingsWindow? _settingsWindow;
 
     private DateTime _nextReminder;
@@ -33,7 +43,7 @@ public partial class App : System.Windows.Application
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
-        _singleInstance = new Mutex(true, @"Local\EyeReminder.SingleInstance", out var isFirst);
+        _singleInstance = new Mutex(true, AppInfo.SingleInstanceMutex, out var isFirst);
         if (!isFirst)
         {
             Shutdown();
@@ -49,8 +59,7 @@ public partial class App : System.Windows.Application
         _ticker.Tick += OnTick;
         _ticker.Start();
 
-        // "EyeReminder.exe --settings" goes straight to the configuration window.
-        if (e.Args.Any(arg => string.Equals(arg, "--settings", StringComparison.OrdinalIgnoreCase)))
+        if (e.Args.Any(arg => string.Equals(arg, SettingsArgument, StringComparison.OrdinalIgnoreCase)))
         {
             OpenSettings();
             return;
@@ -64,7 +73,7 @@ public partial class App : System.Windows.Application
 
     /// <summary>
     /// Tells the user the app is alive, since it otherwise starts with no window at all.
-    /// Same click-through card as the reminder, silent, and it fades out by itself.
+    /// Same card as the reminder, silent, and it fades out by itself.
     /// </summary>
     private void ShowStartupNotice()
     {
@@ -74,11 +83,13 @@ public partial class App : System.Windows.Application
             _settings,
             screen,
             AppInfo.Name,
-            Strings.Background(_settings),
-            seconds: 5);
+            OverlayText.Background(_settings),
+            seconds: StartupNoticeSeconds);
+
+        notice.SettingsRequested += OpenSettings;
+        notice.Closed += (_, _) => _overlays.Remove(notice);
 
         _overlays.Add(notice);
-        notice.Closed += (_, _) => _overlays.Remove(notice);
         notice.Show();
     }
 
@@ -176,6 +187,7 @@ public partial class App : System.Windows.Application
         foreach (var screen in screens)
         {
             var overlay = new OverlayWindow(settings, screen);
+            overlay.SettingsRequested += OpenSettings;
 
             // Only the first overlay drives the audio, so multi-monitor does not stack sounds.
             if (first && settings.SoundOnFinish)
@@ -216,13 +228,11 @@ public partial class App : System.Windows.Application
     {
         DismissAll();
         _pausedUntil = DateTime.Now.Add(duration);
-        if (_pauseItem is not null) _pauseItem.Text = Ui.T("tray.resume");
     }
 
     private void Resume()
     {
         _pausedUntil = null;
-        if (_pauseItem is not null) _pauseItem.Text = Ui.T("tray.pause");
         ScheduleNext();
     }
 
@@ -267,7 +277,7 @@ public partial class App : System.Windows.Application
     {
         _tray = new WF.NotifyIcon
         {
-            Icon = CreateEyeIcon(),
+            Icon = EyeIcon.ForTray(),
             Visible = true
         };
 
@@ -286,15 +296,14 @@ public partial class App : System.Windows.Application
 
         var menu = new WF.ContextMenuStrip { ShowImageMargin = false };
 
-        _statusItem = new WF.ToolStripMenuItem("—") { Enabled = false };
-        _pauseItem = new WF.ToolStripMenuItem(
-            _pausedUntil is null ? Ui.T("tray.pause") : Ui.T("tray.resume"), null, (_, _) =>
-            {
-                if (_pausedUntil is null) Pause(TimeSpan.FromHours(1));
-                else Resume();
-            });
+        var status = new WF.ToolStripMenuItem { Enabled = false };
+        var pause = new WF.ToolStripMenuItem(string.Empty, null, (_, _) =>
+        {
+            if (_pausedUntil is null) Pause(ManualPause);
+            else Resume();
+        });
 
-        menu.Items.Add(_statusItem);
+        menu.Items.Add(status);
         menu.Items.Add(new WF.ToolStripSeparator());
         menu.Items.Add(new WF.ToolStripMenuItem(Ui.T("tray.test"), null, (_, _) => ShowBreak()));
         menu.Items.Add(new WF.ToolStripMenuItem(Ui.T("tray.reset"), null, (_, _) =>
@@ -302,15 +311,23 @@ public partial class App : System.Windows.Application
             DismissAll();
             ScheduleNext();
         }));
-        menu.Items.Add(_pauseItem);
+        menu.Items.Add(pause);
         menu.Items.Add(new WF.ToolStripSeparator());
         menu.Items.Add(new WF.ToolStripMenuItem(Ui.T("tray.settings"), null, (_, _) => OpenSettings()));
         menu.Items.Add(new WF.ToolStripMenuItem(Ui.T("tray.exit"), null, (_, _) => Shutdown()));
 
-        menu.Opening += (_, _) => _statusItem.Text = StatusLine();
+        // Both labels depend on live state, so they are filled in as the menu opens rather
+        // than pushed from every place that changes that state.
+        menu.Opening += (_, _) =>
+        {
+            status.Text = StatusLine();
+            pause.Text = _pausedUntil is null ? Ui.T("tray.pause") : Ui.T("tray.resume");
+        };
 
-        _tray.ContextMenuStrip?.Dispose();
+        var previous = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = menu;
+        previous?.Dispose();
+
         _tray.Text = Ui.T("tray.tooltip");
     }
 
@@ -318,7 +335,7 @@ public partial class App : System.Windows.Application
     {
         if (_pausedUntil is { } until)
         {
-            return Ui.T("tray.pausedUntil", until.ToString("HH:mm"));
+            return Ui.T("tray.pausedUntil", until.ToString("HH:mm", CultureInfo.CurrentCulture));
         }
 
         if (_idle)
@@ -330,48 +347,9 @@ public partial class App : System.Windows.Application
         if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
 
         var formatted = remaining.TotalHours >= 1
-            ? remaining.ToString(@"h\:mm\:ss")
-            : remaining.ToString(@"mm\:ss");
+            ? remaining.ToString(@"h\:mm\:ss", CultureInfo.CurrentCulture)
+            : remaining.ToString(@"mm\:ss", CultureInfo.CurrentCulture);
 
         return Ui.T("tray.next", formatted);
     }
-
-    /// <summary>Draws the tray icon at runtime so the app ships without binary assets.</summary>
-    private static Icon CreateEyeIcon()
-    {
-        using var bitmap = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bitmap))
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.Clear(Color.Transparent);
-
-            using var pen = new Pen(Color.FromArgb(240, 127, 212, 196), 2.6f);
-            using var brush = new SolidBrush(Color.FromArgb(240, 127, 212, 196));
-
-            using var eye = new GraphicsPath();
-            eye.AddBezier(2, 16, 10, 5, 22, 5, 30, 16);
-            eye.AddBezier(30, 16, 22, 27, 10, 27, 2, 16);
-            g.DrawPath(pen, eye);
-
-            g.FillEllipse(brush, 11, 11, 10, 10);
-        }
-
-        // Copy the handle-backed icon so the GDI handle can be released immediately.
-        var handle = bitmap.GetHicon();
-        try
-        {
-            using var temp = Icon.FromHandle(handle);
-            return (Icon)temp.Clone();
-        }
-        finally
-        {
-            NativeMethods.DestroyIcon(handle);
-        }
-    }
-}
-
-internal static class NativeMethods
-{
-    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-    public static extern bool DestroyIcon(IntPtr hIcon);
 }

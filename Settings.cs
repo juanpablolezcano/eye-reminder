@@ -34,7 +34,7 @@ public sealed class Settings
     public string Position { get; set; } = "TopCenter";
 
     public double Scale { get; set; } = 1.0;
-    public bool AllScreens { get; set; } = false;
+    public bool AllScreens { get; set; }
     public double Opacity { get; set; } = 0.95;
 
     public bool Sound { get; set; } = true;
@@ -50,8 +50,8 @@ public sealed class Settings
     /// <summary>Play the same sound again when the break is over.</summary>
     public bool SoundOnFinish { get; set; } = true;
 
-    /// <summary>Language code from <see cref="Strings.All"/>, or "auto" to follow Windows.</summary>
-    public string Language { get; set; } = Strings.Auto;
+    /// <summary>Language code from <see cref="OverlayText.All"/>, or "auto" to follow Windows.</summary>
+    public string Language { get; set; } = OverlayText.Auto;
 
     // Empty means "use the language default". {0} is replaced with BreakSeconds in both cases.
     public string TitleOverride { get; set; } = "";

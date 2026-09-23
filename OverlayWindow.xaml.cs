@@ -1,6 +1,6 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using WF = System.Windows.Forms;
@@ -12,6 +12,9 @@ public partial class OverlayWindow : Window
     /// <summary>The break itself is over (fired once, before the fade out).</summary>
     public event Action? BreakEnded;
 
+    /// <summary>The user clicked the gear on the card.</summary>
+    public event Action? SettingsRequested;
+
     private enum Phase
     {
         /// <summary>The 3-2-1 heads-up before looking away.</summary>
@@ -22,7 +25,14 @@ public partial class OverlayWindow : Window
         Notice
     }
 
+    private const int FadeInMs = 350;
     private const int FadeOutMs = 300;
+
+    /// <summary>Extra time the watchdog waits past the fade before forcing the close.</summary>
+    private const int WatchdogGraceMs = 500;
+
+    /// <summary>Gap between the card and the edge of the working area.</summary>
+    private const int ScreenMargin = 16;
 
     private readonly Settings _settings;
     private readonly WF.Screen _screen;
@@ -50,26 +60,35 @@ public partial class OverlayWindow : Window
             _remaining = settings.BreakSeconds;
         }
 
-        TitleText.Text = Strings.Title(settings);
-        MessageText.Text = _phase == Phase.Leadin ? Strings.Countdown(settings) : Strings.Message(settings);
-        CountdownText.Text = _remaining.ToString();
+        TitleText.Text = OverlayText.Title(settings);
+        MessageText.Text = _phase == Phase.Leadin ? OverlayText.Countdown(settings) : OverlayText.Message(settings);
+        CountdownText.Text = _remaining.ToString(CultureInfo.CurrentCulture);
 
         // Arabic and friends need the whole card mirrored, not just the text.
-        Card.FlowDirection = Strings.Resolve(settings.Language).RightToLeft
+        Card.FlowDirection = OverlayText.Resolve(settings.Language).RightToLeft
             ? System.Windows.FlowDirection.RightToLeft
             : System.Windows.FlowDirection.LeftToRight;
 
-        // The bar tracks the break only, so it stays hidden during the lead-in.
         ProgressRow.Visibility = _phase == Phase.Leadin ? Visibility.Hidden : Visibility.Visible;
 
         ApplyTheme();
 
         _countdown.Tick += OnCountdownTick;
+
+        // Anywhere on the card dismisses it, so it can be cleared in one click during a call.
+        // The two buttons handle their own clicks, so this never fires for them.
+        Card.MouseLeftButtonDown += (_, _) => Dismiss();
+        CloseButton.Click += (_, _) => Dismiss();
+        SettingsButton.Click += (_, _) =>
+        {
+            SettingsRequested?.Invoke();
+            Dismiss();
+        };
     }
 
     /// <summary>
-    /// Builds the "running in the background" card: same look and same click-through
-    /// behaviour, but it just shows a line of text and dismisses itself.
+    /// Builds the "running in the background" card: same look and behaviour, but it just
+    /// shows a line of text and dismisses itself.
     /// </summary>
     public static OverlayWindow Notice(Settings settings, WF.Screen screen, string title, string message, int seconds)
     {
@@ -103,6 +122,9 @@ public partial class OverlayWindow : Window
         EyeOutline.Stroke = Themes.Brush(palette.Accent);
         EyePupil.Fill = Themes.Brush(palette.Accent);
 
+        GearIcon.Stroke = Themes.Brush(palette.Message);
+        CloseIcon.Stroke = Themes.Brush(palette.Message);
+
         ProgressTrack.Background = Themes.Brush(palette.Track);
         ProgressFill.Background = Themes.Brush(palette.Accent);
 
@@ -115,7 +137,7 @@ public partial class OverlayWindow : Window
         base.OnSourceInitialized(e);
 
         // Must happen before the window is ever shown so it never steals the foreground.
-        Win32.MakeClickThroughOverlay(new WindowInteropHelper(this).Handle);
+        Win32.ApplyOverlayStyles(new WindowInteropHelper(this).Handle);
     }
 
     protected override void OnContentRendered(EventArgs e)
@@ -123,7 +145,7 @@ public partial class OverlayWindow : Window
         base.OnContentRendered(e);
 
         PlaceOnScreen();
-        FadeTo(_settings.Opacity, 350);
+        FadeTo(_settings.Opacity, FadeInMs);
 
         if (_phase == Phase.Break)
         {
@@ -133,12 +155,6 @@ public partial class OverlayWindow : Window
         _countdown.Start();
     }
 
-    private void OnNoticeTick()
-    {
-        _countdown.Stop();
-        Dismiss();
-    }
-
     private void OnCountdownTick(object? sender, EventArgs e)
     {
         _remaining--;
@@ -146,15 +162,11 @@ public partial class OverlayWindow : Window
         if (_remaining > 0)
         {
             // The notice has no visible counter; it just waits its turn out.
-            if (_phase != Phase.Notice) CountdownText.Text = _remaining.ToString();
+            if (_phase != Phase.Notice) CountdownText.Text = _remaining.ToString(CultureInfo.CurrentCulture);
             return;
         }
 
-        if (_phase == Phase.Notice)
-        {
-            OnNoticeTick();
-            return;
-        }
+        _countdown.Stop();
 
         if (_phase == Phase.Leadin)
         {
@@ -162,10 +174,12 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _countdown.Stop();
-        CountdownText.Text = "0";
+        if (_phase == Phase.Break)
+        {
+            CountdownText.Text = "0";
+            BreakEnded?.Invoke();
+        }
 
-        BreakEnded?.Invoke();
         Dismiss();
     }
 
@@ -174,12 +188,14 @@ public partial class OverlayWindow : Window
         _phase = Phase.Break;
         _remaining = _settings.BreakSeconds;
 
-        MessageText.Text = Strings.Message(_settings);
-        CountdownText.Text = _remaining.ToString();
+        MessageText.Text = OverlayText.Message(_settings);
+        CountdownText.Text = _remaining.ToString(CultureInfo.CurrentCulture);
         CountdownText.Foreground = Themes.Brush(Themes.For(_settings).Title);
 
         ProgressRow.Visibility = Visibility.Visible;
         StartProgressAnimation();
+
+        _countdown.Start();
     }
 
     /// <summary>Fades out and then closes. Safe to call more than once.</summary>
@@ -193,7 +209,7 @@ public partial class OverlayWindow : Window
 
         // Watchdog: if the animation clock never reports completion the window would linger
         // invisible forever and the scheduler would never resume. Force the close.
-        var guard = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(FadeOutMs + 500) };
+        var guard = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(FadeOutMs + WatchdogGraceMs) };
         guard.Tick += (_, _) =>
         {
             guard.Stop();
@@ -237,16 +253,15 @@ public partial class OverlayWindow : Window
         var width = rect.Right - rect.Left;
         var height = rect.Bottom - rect.Top;
         var area = _screen.WorkingArea; // physical pixels, matching GetWindowRect
-        const int margin = 16;
 
         var (x, y) = _settings.Position.Trim().ToLowerInvariant() switch
         {
             "center"      => (area.Left + (area.Width - width) / 2, area.Top + (area.Height - height) / 2),
-            "topright"    => (area.Right - width - margin, area.Top + margin),
-            "bottomright" => (area.Right - width - margin, area.Bottom - height - margin),
-            "bottomleft"  => (area.Left + margin, area.Bottom - height - margin),
-            "topleft"     => (area.Left + margin, area.Top + margin),
-            _             => (area.Left + (area.Width - width) / 2, area.Top + margin), // TopCenter
+            "topright"    => (area.Right - width - ScreenMargin, area.Top + ScreenMargin),
+            "bottomright" => (area.Right - width - ScreenMargin, area.Bottom - height - ScreenMargin),
+            "bottomleft"  => (area.Left + ScreenMargin, area.Bottom - height - ScreenMargin),
+            "topleft"     => (area.Left + ScreenMargin, area.Top + ScreenMargin),
+            _             => (area.Left + (area.Width - width) / 2, area.Top + ScreenMargin), // TopCenter
         };
 
         Win32.PlaceTopMost(hWnd, x, y);

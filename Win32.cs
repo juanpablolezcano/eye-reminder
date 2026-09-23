@@ -3,13 +3,12 @@ using System.Runtime.InteropServices;
 namespace EyeReminder;
 
 /// <summary>
-/// Interop needed to turn a regular WPF window into a click-through, never-focused overlay.
+/// Interop for the overlay window, the dark title bar and the system idle timer.
 /// </summary>
 internal static class Win32
 {
     public const int GWL_EXSTYLE = -20;
 
-    public const int WS_EX_TRANSPARENT = 0x00000020; // clicks pass through to whatever is underneath
     public const int WS_EX_TOOLWINDOW  = 0x00000080; // hidden from Alt+Tab and the taskbar
     public const int WS_EX_LAYERED     = 0x00080000; // required for per-window alpha
     public const int WS_EX_NOACTIVATE  = 0x08000000; // never takes focus, even when shown
@@ -41,12 +40,16 @@ internal static class Win32
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
     /// <summary>
-    /// Adds the extended styles that make the window invisible to the mouse and to the focus system.
+    /// Makes the window a floating overlay: always on top, absent from Alt+Tab, and above all
+    /// never able to take the foreground away from whatever the user is working in.
+    ///
+    /// It deliberately stays hit-testable so the card can be clicked to dismiss it. Only the
+    /// card's own rectangle captures the mouse; the rest of the desktop is untouched.
     /// </summary>
-    public static void MakeClickThroughOverlay(IntPtr hWnd)
+    public static void ApplyOverlayStyles(IntPtr hWnd)
     {
         var current = (long)GetWindowLongPtr(hWnd, GWL_EXSTYLE);
-        var updated = current | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
+        var updated = current | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, new IntPtr(updated));
     }
 
@@ -61,7 +64,7 @@ internal static class Win32
 
         try
         {
-            DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref enabled, sizeof(int));
+            _ = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref enabled, sizeof(int));
         }
         catch (DllNotFoundException)
         {

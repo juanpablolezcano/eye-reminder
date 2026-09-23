@@ -3,7 +3,7 @@ using System.Globalization;
 namespace EyeReminder;
 
 /// <summary>
-/// One language's copy for the overlay. <see cref="Message"/> carries a {0} placeholder
+/// One language's copy for the reminder card. <see cref="Message"/> carries a {0} placeholder
 /// that is filled with the configured break length, and <see cref="Background"/> one for
 /// the interval in minutes, so the text always matches the settings.
 /// </summary>
@@ -16,7 +16,7 @@ internal sealed record LanguagePack(
     string Background,
     bool RightToLeft = false);
 
-internal static class Strings
+internal static class OverlayText
 {
     public const string Auto = "auto";
 

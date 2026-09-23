@@ -32,6 +32,9 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
 
+        // Same mark as the tray, so the window is recognisable at a glance.
+        Icon = EyeIcon.ForWindow();
+
         // Work on a copy so Cancel leaves the running configuration untouched.
         _working = current.Clone();
 
@@ -101,7 +104,7 @@ public partial class SettingsWindow : Window
     /// <summary>Re-reads the language chip, retranslates the chrome and relabels the chips.</summary>
     private void ApplyUiLanguage()
     {
-        Ui.Use(ReadChip(LanguagePanel, Strings.Auto));
+        Ui.Use(ReadChip(LanguagePanel, OverlayText.Auto));
 
         // Theme, position and accent chips carry translated captions, so they get rebuilt.
         var theme = ReadChip(ThemePanel, "Dark");
@@ -130,9 +133,9 @@ public partial class SettingsWindow : Window
     /// <summary>Language names stay in their own language, so these are built once.</summary>
     private void BuildLanguageChips()
     {
-        _autoLanguageChip = AddChip(LanguagePanel, "language", Strings.Auto, Ui.T("lang.auto"));
+        _autoLanguageChip = AddChip(LanguagePanel, "language", OverlayText.Auto, Ui.T("lang.auto"));
 
-        foreach (var pack in Strings.All)
+        foreach (var pack in OverlayText.All)
         {
             AddChip(LanguagePanel, "language", pack.Code, pack.Label);
         }
@@ -240,9 +243,9 @@ public partial class SettingsWindow : Window
         if (hasOverrides)
         {
             // Fill any field they left on the default so all three are editable side by side.
-            TitleInput.Text = Or(_working.TitleOverride, Strings.TitleTemplate(WithoutOverrides()));
-            CountdownInput.Text = Or(_working.CountdownOverride, Strings.CountdownTemplate(WithoutOverrides()));
-            MessageInput.Text = Or(_working.MessageOverride, Strings.MessageTemplate(WithoutOverrides()));
+            TitleInput.Text = Or(_working.TitleOverride, OverlayText.TitleTemplate(WithoutOverrides()));
+            CountdownInput.Text = Or(_working.CountdownOverride, OverlayText.CountdownTemplate(WithoutOverrides()));
+            MessageInput.Text = Or(_working.MessageOverride, OverlayText.MessageTemplate(WithoutOverrides()));
         }
 
         RefreshTextPreview();
@@ -261,7 +264,7 @@ public partial class SettingsWindow : Window
     private Settings WithoutOverrides()
     {
         var bare = _working.Clone();
-        bare.Language = ReadChip(LanguagePanel, Strings.Auto);
+        bare.Language = ReadChip(LanguagePanel, OverlayText.Auto);
         bare.BreakSeconds = (int)BreakSlider.Value;
         bare.TitleOverride = "";
         bare.CountdownOverride = "";
@@ -285,9 +288,9 @@ public partial class SettingsWindow : Window
 
         // Templates, not resolved text: ticking the box must hand the user a {0} to keep.
         var defaults = WithoutOverrides();
-        TitleInput.Text = Strings.TitleTemplate(defaults);
-        CountdownInput.Text = Strings.CountdownTemplate(defaults);
-        MessageInput.Text = Strings.MessageTemplate(defaults);
+        TitleInput.Text = OverlayText.TitleTemplate(defaults);
+        CountdownInput.Text = OverlayText.CountdownTemplate(defaults);
+        MessageInput.Text = OverlayText.MessageTemplate(defaults);
     }
 
     private void UpdateReadouts()
@@ -327,7 +330,7 @@ public partial class SettingsWindow : Window
         result.SoundOnFinish = SoundFinishCheck.IsChecked == true;
         result.SoundFile = SoundFileBox.Text.Trim();
 
-        result.Language = ReadChip(LanguagePanel, Strings.Auto);
+        result.Language = ReadChip(LanguagePanel, OverlayText.Auto);
 
         // Overrides are only stored when the user opted in; otherwise the language decides.
         var custom = CustomTextCheck.IsChecked == true;

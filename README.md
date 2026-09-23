@@ -3,19 +3,31 @@
 A desktop overlay for the **20/20/20 rule**: every 20 minutes, look at something
 about 20 feet (6 m) away for 20 seconds.
 
-The card floats above everything else but **never takes focus and never swallows
-your clicks** — you can keep typing straight through it.
+The card floats above everything else and **never takes focus**, so it cannot
+interrupt what you are typing. Clicking it dismisses it, which is one gesture away
+when a reminder lands in the middle of a call.
 
-## How the pass-through works
+## The card
+
+| Where you click | What happens |
+|---|---|
+| Anywhere on the card | dismisses it |
+| The X | dismisses it |
+| The gear | opens the settings window |
+
+## How the overlay works
 
 The window is created with these Win32 extended styles ([Win32.cs](Win32.cs)):
 
 | Flag | Effect |
 |---|---|
-| `WS_EX_TRANSPARENT` | mouse clicks pass through to whatever is underneath |
-| `WS_EX_NOACTIVATE` | never takes focus, not even when it appears |
+| `WS_EX_NOACTIVATE` | never takes focus, not even when clicked |
 | `WS_EX_TOOLWINDOW` | hidden from Alt+Tab and the taskbar |
 | `WS_EX_LAYERED` | real transparency and rounded corners |
+
+`WS_EX_NOACTIVATE` is what matters: the card can be clicked without the window
+you were working in losing the foreground. Only the card's own rectangle takes
+the mouse; the rest of the desktop is untouched.
 
 It is then positioned with `SetWindowPos` + `SWP_NOACTIVATE` in physical pixels,
 which keeps it correct on multi-monitor setups with mixed DPI.
@@ -27,11 +39,11 @@ which keeps it correct on multi-monitor setups with mixed DPI.
 | What | Where from |
 |---|---|
 | WPF (`UseWPF`) | .NET 10 Windows Desktop |
-| WinForms (`UseWindowsForms`) | .NET 10 Windows Desktop — only for `NotifyIcon` and `Screen` |
+| WinForms (`UseWindowsForms`) | .NET 10 Windows Desktop; only for `NotifyIcon` and `Screen` |
 | `System.Text.Json` | .NET runtime |
 | `System.Media.SoundPlayer` | .NET runtime |
-| `System.Drawing` | .NET runtime — draws the tray icon at runtime |
-| `Microsoft.Win32.Registry` | .NET runtime — "start with Windows" |
+| `System.Drawing` | .NET runtime; draws the tray icon at runtime |
+| `Microsoft.Win32.Registry` | .NET runtime; "start with Windows" |
 | `user32.dll`, `dwmapi.dll` | Windows, through P/Invoke |
 
 `dotnet list package` reports no package the project asked for; the only entry is
@@ -58,9 +70,9 @@ clock, and shows a short "running in the background" card so you know it started
 
 Tray menu:
 
-- **Next break in mm:ss** — time remaining
-- **Test now** — fires the card; repeatable as often as you like
-- **Restart timer** — starts the interval over
+- **Next break in mm:ss**: time remaining
+- **Test now**: fires the card, repeatable as often as you like
+- **Restart timer**: starts the interval over
 - **Pause for 1 hour** / **Resume**
 - **Settings...**
 - **Exit**
@@ -111,7 +123,7 @@ A missing or malformed file falls back to the defaults.
 
 Because the app starts with no window at all, it shows the reminder card for five
 seconds at launch, saying it is running in the background and when the first break
-is due. It is not a Windows notification — it is the same click-through overlay,
+is due. It is not a Windows notification; it is the same card,
 silent, and it fades out on its own.
 
 Turn it off with **Show a notice at startup**, or `"showStartupNotice": false`.
@@ -122,7 +134,7 @@ The overlay text is **not typed in by hand**: it comes from the selected languag
 and the break length is substituted into it. Set the break to 45 seconds and the
 card says "45 seconds" by itself.
 
-Bundled languages ([Strings.cs](Strings.cs)):
+Bundled languages ([OverlayText.cs](OverlayText.cs)):
 
 `es-AR` · `es-419` · `es-MX` · `es-ES` · `en` · `pt-BR` · `pt-PT` · `it` · `fr` ·
 `de` · `nl` · `pl` · `ru` · `tr` · `ja` · `ko` · `zh-Hans` · `zh-Hant` · `hi` · `ar`
@@ -135,17 +147,17 @@ to English. Arabic renders with the whole card mirrored (RTL).
 In English the distance reads **20 feet**; everywhere else, **6 metres**.
 
 The interface follows the same setting: the tray menu and the entire settings
-window are translated ([Ui.cs](Ui.cs) and [UiAsian.cs](UiAsian.cs), 72 strings per
+window are translated ([Ui.cs](Ui.cs) and [UiText.cs](UiText.cs), 72 strings per
 language). Changing the language retranslates the open window in place.
 
 > The translations were not reviewed by native speakers. If any wording reads
-> wrong, the override below is the escape hatch — and a pull request is welcome.
+> wrong, the override below is the escape hatch, and a pull request is welcome.
 
 ### Custom text
 
 Tick **Write my own text** to override any of the three strings. The fields are
-pre-filled with the language's **template**, `{0}` included — not with the already
-resolved text — so custom wording still tracks the configured duration.
+pre-filled with the language's **template**, `{0}` included, not with the already
+resolved text, so custom wording still tracks the configured duration.
 
 The override is **per field**: change only the message and the title still comes
 from the language. Use `{0}` wherever the break length should appear:
@@ -182,7 +194,7 @@ full path. The default is `notification.wav`.
 **That file is not in this repository** (licensing), so a fresh clone has no
 `notification.wav`. That is fine: when the file is missing, [Chime.cs](Chime.cs)
 synthesises a soft two-note bell (E5 → B5, exponential decay) in memory instead.
-No Windows system sound is ever used — those share their timbre with error alerts.
+No Windows system sound is ever used: those share their timbre with error alerts.
 
 To use your own, drop a `.wav` next to the `.exe` and point `soundFile` at it, or
 press **Browse** in the settings window:
@@ -191,7 +203,7 @@ press **Browse** in the settings window:
 { "soundFile": "C:\\Windows\\Media\\Windows Notify Calendar.wav" }
 ```
 
-Only uncompressed PCM `.wav` works — `System.Media.SoundPlayer` does not decode
+Only uncompressed PCM `.wav` works, since `System.Media.SoundPlayer` does not decode
 MP3. Convert with `ffmpeg -i in.mp3 -acodec pcm_s16le -ar 44100 out.wav`.
 
 Free sources: [Pixabay](https://pixabay.com/sound-effects/search/notification/),

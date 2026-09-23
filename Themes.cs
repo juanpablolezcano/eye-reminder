@@ -107,7 +107,7 @@ internal static class Themes
     {
         try
         {
-            color = Hex(value.StartsWith("#") ? value : "#" + value);
+            color = Hex(value.StartsWith('#') ? value : "#" + value);
             return true;
         }
         catch

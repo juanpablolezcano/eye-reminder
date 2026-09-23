@@ -9,9 +9,38 @@
         Topmost="True"
         ResizeMode="NoResize"
         Focusable="False"
-        IsHitTestVisible="False"
         SizeToContent="WidthAndHeight"
         Opacity="0">
+
+    <Window.Resources>
+        <Style x:Key="CardButton" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="2,0,0,0"/>
+            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Hit" CornerRadius="7" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hit" Property="Background" Value="#26FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
 
     <Border x:Name="Card"
             Margin="28"
@@ -29,47 +58,68 @@
             <DropShadowEffect BlurRadius="34" ShadowDepth="6" Direction="270" Opacity="0.55" Color="#000000"/>
         </Border.Effect>
 
-        <StackPanel Orientation="Horizontal">
+        <Grid>
+            <StackPanel Orientation="Horizontal">
 
-            <!-- Eye mark: outer almond + iris -->
-            <Grid Width="44" Height="44" VerticalAlignment="Center" Margin="0,0,20,0">
-                <Path x:Name="EyeOutline"
-                      Stroke="#7FD4C4" StrokeThickness="2.2"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                      Data="M 3,22 C 11,10 33,10 41,22 C 33,34 11,34 3,22 Z"/>
-                <Ellipse x:Name="EyePupil" Width="12" Height="12" Fill="#7FD4C4"/>
-            </Grid>
-
-            <StackPanel VerticalAlignment="Center" MinWidth="300">
-                <TextBlock x:Name="TitleText"
-                           Text="Descansá la vista"
-                           FontFamily="Segoe UI Variable Display, Segoe UI"
-                           FontSize="19" FontWeight="SemiBold"
-                           Foreground="#FFFFFFFF"/>
-
-                <TextBlock x:Name="MessageText"
-                           Text="Mirá algo a 6 metros durante 20 segundos"
-                           FontFamily="Segoe UI Variable Text, Segoe UI"
-                           FontSize="13.5"
-                           Margin="0,3,0,12"
-                           Foreground="#B4FFFFFF"/>
-
-                <!-- Countdown track; the fill shrinks to zero over the break -->
-                <Grid x:Name="ProgressRow">
-                    <Border x:Name="ProgressTrack" Height="5" CornerRadius="3"
-                            Background="#26FFFFFF" HorizontalAlignment="Stretch"/>
-                    <Border x:Name="ProgressFill" Height="5" CornerRadius="3"
-                            Background="#7FD4C4" HorizontalAlignment="Left"/>
+                <!-- Eye mark: outer almond + iris -->
+                <Grid Width="44" Height="44" VerticalAlignment="Center" Margin="0,0,20,0">
+                    <Path x:Name="EyeOutline"
+                          Stroke="#7FD4C4" StrokeThickness="2.2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="M 3,22 C 11,10 33,10 41,22 C 33,34 11,34 3,22 Z"/>
+                    <Ellipse x:Name="EyePupil" Width="12" Height="12" Fill="#7FD4C4"/>
                 </Grid>
+
+                <StackPanel VerticalAlignment="Center" MinWidth="300">
+                    <TextBlock x:Name="TitleText"
+                               FontFamily="Segoe UI Variable Display, Segoe UI"
+                               FontSize="19" FontWeight="SemiBold"
+                               Foreground="#FFFFFFFF"/>
+
+                    <TextBlock x:Name="MessageText"
+                               FontFamily="Segoe UI Variable Text, Segoe UI"
+                               FontSize="13.5"
+                               Margin="0,3,0,12"
+                               Foreground="#B4FFFFFF"/>
+
+                    <!-- Countdown track; the fill shrinks to zero over the break -->
+                    <Grid x:Name="ProgressRow">
+                        <Border x:Name="ProgressTrack" Height="5" CornerRadius="3"
+                                Background="#26FFFFFF" HorizontalAlignment="Stretch"/>
+                        <Border x:Name="ProgressFill" Height="5" CornerRadius="3"
+                                Background="#7FD4C4" HorizontalAlignment="Left"/>
+                    </Grid>
+                </StackPanel>
+
+                <TextBlock x:Name="CountdownText"
+                           VerticalAlignment="Center"
+                           Margin="24,0,0,0"
+                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                           FontSize="34" FontWeight="Light"
+                           Foreground="#E6FFFFFF"/>
             </StackPanel>
 
-            <TextBlock x:Name="CountdownText"
-                       Text="20"
-                       VerticalAlignment="Center"
-                       Margin="24,0,0,0"
-                       FontFamily="Segoe UI Variable Display, Segoe UI"
-                       FontSize="34" FontWeight="Light"
-                       Foreground="#E6FFFFFF"/>
-        </StackPanel>
+            <!-- Sits in the card's padding, out of the way of the text -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="0,-10,-20,0">
+
+                <Button x:Name="SettingsButton" Style="{StaticResource CardButton}">
+                    <Path x:Name="GearIcon" Stroke="#B4FFFFFF" StrokeThickness="1.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="M 9,4.5 A 4.5,4.5 0 1 0 9,13.5 A 4.5,4.5 0 1 0 9,4.5 Z
+                                M 14,9 L 16.2,9   M 12.5,12.5 L 14.1,14.1
+                                M 9,14 L 9,16.2   M 5.5,12.5 L 3.9,14.1
+                                M 4,9 L 1.8,9     M 5.5,5.5 L 3.9,3.9
+                                M 9,4 L 9,1.8     M 12.5,5.5 L 14.1,3.9"/>
+                </Button>
+
+                <Button x:Name="CloseButton" Style="{StaticResource CardButton}">
+                    <Path x:Name="CloseIcon" Stroke="#B4FFFFFF" StrokeThickness="1.6"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="M 4.5,4.5 L 13.5,13.5 M 13.5,4.5 L 4.5,13.5"/>
+                </Button>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>
