@@ -1,0 +1,21 @@
+{
+  "intervalMinutes": 20,
+  "breakSeconds": 20,
+  "countdownSeconds": 3,
+  "pauseWhenIdle": true,
+  "idleMinutes": 5,
+  "language": "auto",
+  "titleOverride": "",
+  "countdownOverride": "",
+  "messageOverride": "",
+  "theme": "Dark",
+  "accentColor": "",
+  "position": "TopCenter",
+  "scale": 1.0,
+  "allScreens": false,
+  "opacity": 0.95,
+  "sound": true,
+  "soundFile": "notification.wav",
+  "soundVolume": 0.45,
+  "soundOnFinish": true
+}

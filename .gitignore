@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+publish/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# The reminder sound is not redistributed here. When it is absent the app
+# synthesises its own chime, so a fresh clone still works.
+*.wav

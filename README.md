@@ -1,0 +1,203 @@
+# EyeReminder
+
+A desktop overlay for the **20/20/20 rule**: every 20 minutes, look at something
+about 20 feet (6 m) away for 20 seconds.
+
+The card floats above everything else but **never takes focus and never swallows
+your clicks** — you can keep typing straight through it.
+
+## How the pass-through works
+
+The window is created with these Win32 extended styles ([Win32.cs](Win32.cs)):
+
+| Flag | Effect |
+|---|---|
+| `WS_EX_TRANSPARENT` | mouse clicks pass through to whatever is underneath |
+| `WS_EX_NOACTIVATE` | never takes focus, not even when it appears |
+| `WS_EX_TOOLWINDOW` | hidden from Alt+Tab and the taskbar |
+| `WS_EX_LAYERED` | real transparency and rounded corners |
+
+It is then positioned with `SetWindowPos` + `SWP_NOACTIVATE` in physical pixels,
+which keeps it correct on multi-monitor setups with mixed DPI.
+
+## Dependencies
+
+**None outside Microsoft.** Everything comes from .NET 10 and Windows itself:
+
+| What | Where from |
+|---|---|
+| WPF (`UseWPF`) | .NET 10 Windows Desktop |
+| WinForms (`UseWindowsForms`) | .NET 10 Windows Desktop — only for `NotifyIcon` and `Screen` |
+| `System.Text.Json` | .NET runtime |
+| `System.Media.SoundPlayer` | .NET runtime |
+| `System.Drawing` | .NET runtime — draws the tray icon at runtime |
+| `Microsoft.Win32.Registry` | .NET runtime — "start with Windows" |
+| `user32.dll`, `dwmapi.dll` | Windows, through P/Invoke |
+
+`dotnet list package` reports no package the project asked for; the only entry is
+`Microsoft.NET.ILLink.Tasks`, which the SDK adds by itself and is a build-time
+tool, not code that ends up in the executable.
+
+## Building and running
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows.
+
+```powershell
+dotnet publish -c Release -o publish
+.\publish\EyeReminder.exe
+```
+
+It opens no window at startup: it lives as a **system tray icon** next to the
+clock, and shows a short "running in the background" card so you know it started.
+
+| Action | Result |
+|---|---|
+| Double-click the tray icon | opens the settings window |
+| Right-click | menu |
+| `EyeReminder.exe --settings` | opens settings directly |
+
+Tray menu:
+
+- **Next break in mm:ss** — time remaining
+- **Test now** — fires the card; repeatable as often as you like
+- **Restart timer** — starts the interval over
+- **Pause for 1 hour** / **Resume**
+- **Settings...**
+- **Exit**
+
+## Settings
+
+Everything is configured from the window (**Settings...** in the tray). Your
+preferences are stored in:
+
+```
+%APPDATA%\EyeReminder\settings.json
+```
+
+**Not** next to the `.exe`, so they survive rebuilds, reinstalls, and moving the
+app into a read-only folder. The [settings.json](settings.json) that ships beside
+the executable holds the factory defaults and is only used to seed your profile
+on first run.
+
+| Key | Default | What it does |
+|---|---|---|
+| `intervalMinutes` | `20` | minutes between reminders |
+| `breakSeconds` | `20` | how long the card stays up |
+| `countdownSeconds` | `3` | 3, 2, 1 heads-up before the break; `0` skips it |
+| `showStartupNotice` | `true` | "running in the background" card at launch |
+| `pauseWhenIdle` | `true` | pause while there is no keyboard or mouse input |
+| `idleMinutes` | `5` | minutes of inactivity before pausing |
+| `language` | `auto` | language code, or `auto` to follow Windows |
+| `titleOverride` | `""` | overrides the language's title |
+| `countdownOverride` | `""` | overrides the countdown text |
+| `messageOverride` | `""` | overrides the break message |
+| `theme` | `Dark` | `Dark`, `Light`, `Warm`, `Minimal` |
+| `accentColor` | `""` | hex override for the theme accent, e.g. `#E894B4` |
+| `position` | `TopCenter` | `TopCenter`, `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Center` |
+| `scale` | `1.0` | card size (0.7 to 2.0) |
+| `allScreens` | `false` | show it on every monitor |
+| `opacity` | `0.95` | card opacity |
+| `sound` | `true` | play a sound when the break starts |
+| `soundFile` | `notification.wav` | sound to play; see below |
+| `soundVolume` | `0.45` | volume of the built-in chime (0 to 1) |
+| `soundOnFinish` | `true` | replay the sound when the break ends |
+
+**Preview** shows the card with whatever is currently in the form without saving,
+so you can try a style, position and size before committing.
+
+A missing or malformed file falls back to the defaults.
+
+## Startup notice
+
+Because the app starts with no window at all, it shows the reminder card for five
+seconds at launch, saying it is running in the background and when the first break
+is due. It is not a Windows notification — it is the same click-through overlay,
+silent, and it fades out on its own.
+
+Turn it off with **Show a notice at startup**, or `"showStartupNotice": false`.
+
+## Languages and text
+
+The overlay text is **not typed in by hand**: it comes from the selected language,
+and the break length is substituted into it. Set the break to 45 seconds and the
+card says "45 seconds" by itself.
+
+Bundled languages ([Strings.cs](Strings.cs)):
+
+`es-AR` · `es-419` · `es-MX` · `es-ES` · `en` · `pt-BR` · `pt-PT` · `it` · `fr` ·
+`de` · `nl` · `pl` · `ru` · `tr` · `ja` · `ko` · `zh-Hans` · `zh-Hant` · `hi` · `ar`
+
+With `auto` it follows the Windows display language, with sensible fallbacks: any
+`es-*` that is not AR, MX or ES lands on `es-419`; `pt-*` lands on Brazil unless it
+is `pt-PT`; `zh-TW`, `zh-HK` and `zh-MO` land on Traditional. No match falls back
+to English. Arabic renders with the whole card mirrored (RTL).
+
+In English the distance reads **20 feet**; everywhere else, **6 metres**.
+
+The interface follows the same setting: the tray menu and the entire settings
+window are translated ([Ui.cs](Ui.cs) and [UiAsian.cs](UiAsian.cs), 72 strings per
+language). Changing the language retranslates the open window in place.
+
+> The translations were not reviewed by native speakers. If any wording reads
+> wrong, the override below is the escape hatch — and a pull request is welcome.
+
+### Custom text
+
+Tick **Write my own text** to override any of the three strings. The fields are
+pre-filled with the language's **template**, `{0}` included — not with the already
+resolved text — so custom wording still tracks the configured duration.
+
+The override is **per field**: change only the message and the title still comes
+from the language. Use `{0}` wherever the break length should appear:
+
+```json
+{ "language": "it", "messageOverride": "My own text: {0} seconds" }
+```
+
+A stray brace breaks nothing: if the format is invalid the text is shown as typed.
+
+## Idle pause
+
+While there is no keyboard or mouse input for `idleMinutes`, the countdown holds.
+When you come back the interval **starts over** rather than firing immediately:
+time away from the keyboard was already time away from the screen.
+
+This uses `GetLastInputInfo` ([Win32.cs](Win32.cs)), which measures real system
+input. The trade-off: **watching a video without touching anything counts as
+idle**, so you will not be reminded then. If you watch long videos, untick it.
+
+## Start with Windows
+
+The **Start with Windows** checkbox writes
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, pointing at the current
+executable ([StartupManager.cs](StartupManager.cs)). Unticking it removes the key.
+
+> If you move the folder containing the `.exe`, tick the box again to re-point it.
+
+## Sound
+
+`soundFile` takes either a bare file name, resolved next to the executable, or a
+full path. The default is `notification.wav`.
+
+**That file is not in this repository** (licensing), so a fresh clone has no
+`notification.wav`. That is fine: when the file is missing, [Chime.cs](Chime.cs)
+synthesises a soft two-note bell (E5 → B5, exponential decay) in memory instead.
+No Windows system sound is ever used — those share their timbre with error alerts.
+
+To use your own, drop a `.wav` next to the `.exe` and point `soundFile` at it, or
+press **Browse** in the settings window:
+
+```json
+{ "soundFile": "C:\\Windows\\Media\\Windows Notify Calendar.wav" }
+```
+
+Only uncompressed PCM `.wav` works — `System.Media.SoundPlayer` does not decode
+MP3. Convert with `ffmpeg -i in.mp3 -acodec pcm_s16le -ar 44100 out.wav`.
+
+Free sources: [Pixabay](https://pixabay.com/sound-effects/search/notification/),
+[Mixkit](https://mixkit.co/free-sound-effects/notification/),
+[Freesound](https://freesound.org/search/?q=soft+chime&f=type:wav).
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
