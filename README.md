@@ -134,7 +134,7 @@ The overlay text is **not typed in by hand**: it comes from the selected languag
 and the break length is substituted into it. Set the break to 45 seconds and the
 card says "45 seconds" by itself.
 
-Bundled languages ([OverlayText.cs](OverlayText.cs)):
+Bundled languages ([Languages/overlay.json](Languages/overlay.json)):
 
 `es-AR` · `es-419` · `es-MX` · `es-ES` · `en` · `pt-BR` · `pt-PT` · `it` · `fr` ·
 `de` · `nl` · `pl` · `ru` · `tr` · `ja` · `ko` · `zh-Hans` · `zh-Hant` · `hi` · `ar`
@@ -147,11 +147,37 @@ to English. Arabic renders with the whole card mirrored (RTL).
 In English the distance reads **20 feet**; everywhere else, **6 metres**.
 
 The interface follows the same setting: the tray menu and the entire settings
-window are translated ([Ui.cs](Ui.cs) and [UiText.cs](UiText.cs), 72 strings per
+window are translated ([Languages/ui.json](Languages/ui.json), 72 strings per
 language). Changing the language retranslates the open window in place.
 
 > The translations were not reviewed by native speakers. If any wording reads
 > wrong, the override below is the escape hatch, and a pull request is welcome.
+
+### Where the text lives
+
+Both files sit in `Languages/` and are embedded into the assembly at build time,
+so a single-file build carries every language with nothing extra to ship.
+[OverlayText.cs](OverlayText.cs) and [Ui.cs](Ui.cs) hold only the lookup logic.
+
+`overlay.json` is a flat list, one object per language:
+
+```json
+{ "code": "it", "label": "Italiano", "title": "Riposa gli occhi",
+  "countdown": "...", "message": "... {0} secondi", "background": "... {0} min" }
+```
+
+`ui.json` maps a language code to a table of keys. Two shorthands keep regional
+variants from being copied four times over:
+
+```json
+"es-MX": "es-419",                                     // reuse another table as is
+"pt-PT": { "$extends": "pt-BR", "btn.save": "Guardar" } // inherit, then override
+```
+
+To add a language, add an entry to each file using the same `code`. Nothing else
+needs touching: the settings window builds its language chips from the list. If
+either file fails to parse, the app still runs; the card falls back to English and
+the interface shows raw keys.
 
 ### Custom text
 

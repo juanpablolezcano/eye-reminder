@@ -17,6 +17,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Translations live as JSON and travel inside the assembly, so a single-file
+         build still carries every language with no loose files to ship. -->
+    <EmbeddedResource Include="Languages/*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

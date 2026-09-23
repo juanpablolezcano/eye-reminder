@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.IO;
+using System.Text.Json;
 
 namespace EyeReminder;
 
@@ -16,140 +18,62 @@ internal sealed record LanguagePack(
     string Background,
     bool RightToLeft = false);
 
+/// <summary>
+/// The reminder card's copy, loaded from Languages/overlay.json.
+///
+/// Break lengths are clamped to 3 seconds and up, so every message can assume the plural
+/// form. Languages with harder plural rules (pl, ru) use an invariant abbreviation in the
+/// data instead of trying to inflect.
+/// </summary>
 internal static class OverlayText
 {
     public const string Auto = "auto";
 
     /// <summary>
-    /// Break lengths are clamped to 3 seconds and up, so every message can assume the
-    /// plural form. Languages with harder plural rules (pl, ru) use an invariant
-    /// abbreviation instead of trying to inflect.
+    /// Last resort if the embedded data cannot be read. The reminder is the point of the
+    /// app, so it still has something to say rather than refusing to start.
+    ///
+    /// Declared before <see cref="All"/> on purpose: static initialisers run in declaration
+    /// order, so the other way round the fallback would still be null when Load needs it.
     /// </summary>
-    public static readonly LanguagePack[] All =
+    private static readonly LanguagePack[] Builtin =
     {
-        new("es-AR", "Español (AR)",
-            "Descansá la vista",
-            "Preparate para apartar la vista",
-            "Mirá algo a 6 metros durante {0} segundos",
-            "En segundo plano · primer descanso en {0} min"),
-
-        new("es-419", "Español (LATAM)",
-            "Descansa la vista",
-            "Prepárate para mirar a lo lejos",
-            "Mira algo a 6 metros durante {0} segundos",
-            "En segundo plano · primer descanso en {0} min"),
-
-        new("es-MX", "Español (MX)",
-            "Descansa la vista",
-            "Prepárate para ver a lo lejos",
-            "Voltea a ver algo a 6 metros durante {0} segundos",
-            "En segundo plano · primer descanso en {0} min"),
-
-        new("es-ES", "Español (ES)",
-            "Descansa la vista",
-            "Prepárate para apartar la mirada",
-            "Mira algo a 6 metros durante {0} segundos",
-            "En segundo plano · primer descanso en {0} min"),
-
         new("en", "English",
             "Rest your eyes",
             "Get ready to look away",
             "Look at something 20 feet away for {0} seconds",
-            "Running in the background · first break in {0} min"),
-
-        new("pt-BR", "Português (BR)",
-            "Descanse os olhos",
-            "Prepare-se para desviar o olhar",
-            "Olhe para algo a 6 metros por {0} segundos",
-            "Em segundo plano · primeira pausa em {0} min"),
-
-        new("pt-PT", "Português (PT)",
-            "Descanse os olhos",
-            "Prepare-se para desviar o olhar",
-            "Olhe para algo a 6 metros durante {0} segundos",
-            "Em segundo plano · primeira pausa em {0} min"),
-
-        new("it", "Italiano",
-            "Riposa gli occhi",
-            "Preparati a distogliere lo sguardo",
-            "Guarda qualcosa a 6 metri per {0} secondi",
-            "In background · prima pausa tra {0} min"),
-
-        new("fr", "Français",
-            "Reposez vos yeux",
-            "Préparez-vous à détourner le regard",
-            "Regardez quelque chose à 6 mètres pendant {0} secondes",
-            "En arrière-plan · première pause dans {0} min"),
-
-        new("de", "Deutsch",
-            "Augen ausruhen",
-            "Gleich in die Ferne schauen",
-            "Schau {0} Sekunden lang auf etwas in 6 Metern Entfernung",
-            "Läuft im Hintergrund · erste Pause in {0} Min."),
-
-        new("nl", "Nederlands",
-            "Rust je ogen",
-            "Maak je klaar om weg te kijken",
-            "Kijk {0} seconden naar iets op 6 meter afstand",
-            "Draait op de achtergrond · eerste pauze over {0} min"),
-
-        new("pl", "Polski",
-            "Odpocznij oczom",
-            "Przygotuj się, by spojrzeć w dal",
-            "Patrz na coś w odległości 6 metrów przez {0} sek.",
-            "Działa w tle · pierwsza przerwa za {0} min"),
-
-        new("ru", "Русский",
-            "Дайте глазам отдохнуть",
-            "Приготовьтесь посмотреть вдаль",
-            "Смотрите вдаль, на 6 метров, {0} сек.",
-            "Работает в фоне · первый перерыв через {0} мин"),
-
-        new("tr", "Türkçe",
-            "Gözlerini dinlendir",
-            "Uzağa bakmaya hazırlan",
-            "6 metre uzaktaki bir şeye {0} saniye bak",
-            "Arka planda çalışıyor · ilk mola {0} dk sonra"),
-
-        new("ja", "日本語",
-            "目を休めましょう",
-            "遠くを見る準備をしてください",
-            "6メートル先を{0}秒間見てください",
-            "バックグラウンドで実行中 · 最初の休憩は{0}分後"),
-
-        new("ko", "한국어",
-            "눈을 쉬게 하세요",
-            "멀리 볼 준비를 하세요",
-            "6미터 떨어진 곳을 {0}초 동안 보세요",
-            "백그라운드에서 실행 중 · 첫 휴식까지 {0}분"),
-
-        new("zh-Hans", "简体中文",
-            "让眼睛休息一下",
-            "准备望向远处",
-            "看向 6 米外的物体 {0} 秒",
-            "正在后台运行 · {0} 分钟后第一次休息"),
-
-        new("zh-Hant", "繁體中文",
-            "讓眼睛休息一下",
-            "準備望向遠處",
-            "看向 6 公尺外的物體 {0} 秒",
-            "正在背景執行 · {0} 分鐘後第一次休息"),
-
-        new("hi", "हिन्दी",
-            "आंखों को आराम दें",
-            "दूर देखने के लिए तैयार हो जाइए",
-            "6 मीटर दूर किसी चीज़ को {0} सेकंड तक देखें",
-            "पृष्ठभूमि में चल रहा है · पहला ब्रेक {0} मिनट में"),
-
-        new("ar", "العربية",
-            "أرِح عينيك",
-            "استعد للنظر بعيدًا",
-            "انظر إلى شيء على بعد 6 أمتار لمدة {0} ثانية",
-            "يعمل في الخلفية · أول استراحة بعد {0} دقيقة",
-            RightToLeft: true)
+            "Running in the background · first break in {0} min")
     };
 
-    private static LanguagePack Fallback => All.First(p => p.Code == "en");
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    public static readonly LanguagePack[] All = Load();
+
+    private sealed record LanguageFile(LanguagePack[]? Languages);
+
+    private static LanguagePack[] Load()
+    {
+        try
+        {
+            using var stream = LanguageResources.Open("overlay.json");
+            if (stream is null) return Builtin;
+
+            var file = JsonSerializer.Deserialize<LanguageFile>(stream, JsonOptions);
+
+            return file?.Languages is { Length: > 0 } packs ? packs : Builtin;
+        }
+        catch (JsonException)
+        {
+            return Builtin;
+        }
+        catch (IOException)
+        {
+            return Builtin;
+        }
+    }
+
+    private static LanguagePack Fallback =>
+        All.FirstOrDefault(p => p.Code == "en") ?? All[0];
 
     /// <summary>Resolves the configured code, following the Windows display language for "auto".</summary>
     public static LanguagePack Resolve(string? code)
@@ -196,7 +120,8 @@ internal static class OverlayText
                ?? Fallback;
     }
 
-    private static LanguagePack Pack(string code) => All.First(p => p.Code == code);
+    private static LanguagePack Pack(string code) =>
+        All.FirstOrDefault(p => p.Code == code) ?? Fallback;
 
     // ---- resolved copy ----------------------------------------------------
 
@@ -227,14 +152,15 @@ internal static class OverlayText
     public static string Background(Settings settings)
     {
         var minutes = settings.IntervalMinutes.ToString("0.#", CultureInfo.CurrentCulture);
+        var template = Resolve(settings.Language).Background;
 
         try
         {
-            return string.Format(CultureInfo.CurrentCulture, Resolve(settings.Language).Background, minutes);
+            return string.Format(CultureInfo.CurrentCulture, template, minutes);
         }
         catch (FormatException)
         {
-            return Resolve(settings.Language).Background;
+            return template;
         }
     }
 

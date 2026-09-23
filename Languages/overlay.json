@@ -1,0 +1,165 @@
+{
+  "languages": [
+    {
+      "code": "es-AR",
+      "label": "Español (AR)",
+      "title": "Descansá la vista",
+      "countdown": "Preparate para apartar la vista",
+      "message": "Mirá algo a 6 metros durante {0} segundos",
+      "background": "En segundo plano · primer descanso en {0} min"
+    },
+    {
+      "code": "es-419",
+      "label": "Español (LATAM)",
+      "title": "Descansa la vista",
+      "countdown": "Prepárate para mirar a lo lejos",
+      "message": "Mira algo a 6 metros durante {0} segundos",
+      "background": "En segundo plano · primer descanso en {0} min"
+    },
+    {
+      "code": "es-MX",
+      "label": "Español (MX)",
+      "title": "Descansa la vista",
+      "countdown": "Prepárate para ver a lo lejos",
+      "message": "Voltea a ver algo a 6 metros durante {0} segundos",
+      "background": "En segundo plano · primer descanso en {0} min"
+    },
+    {
+      "code": "es-ES",
+      "label": "Español (ES)",
+      "title": "Descansa la vista",
+      "countdown": "Prepárate para apartar la mirada",
+      "message": "Mira algo a 6 metros durante {0} segundos",
+      "background": "En segundo plano · primer descanso en {0} min"
+    },
+    {
+      "code": "en",
+      "label": "English",
+      "title": "Rest your eyes",
+      "countdown": "Get ready to look away",
+      "message": "Look at something 20 feet away for {0} seconds",
+      "background": "Running in the background · first break in {0} min"
+    },
+    {
+      "code": "pt-BR",
+      "label": "Português (BR)",
+      "title": "Descanse os olhos",
+      "countdown": "Prepare-se para desviar o olhar",
+      "message": "Olhe para algo a 6 metros por {0} segundos",
+      "background": "Em segundo plano · primeira pausa em {0} min"
+    },
+    {
+      "code": "pt-PT",
+      "label": "Português (PT)",
+      "title": "Descanse os olhos",
+      "countdown": "Prepare-se para desviar o olhar",
+      "message": "Olhe para algo a 6 metros durante {0} segundos",
+      "background": "Em segundo plano · primeira pausa em {0} min"
+    },
+    {
+      "code": "it",
+      "label": "Italiano",
+      "title": "Riposa gli occhi",
+      "countdown": "Preparati a distogliere lo sguardo",
+      "message": "Guarda qualcosa a 6 metri per {0} secondi",
+      "background": "In background · prima pausa tra {0} min"
+    },
+    {
+      "code": "fr",
+      "label": "Français",
+      "title": "Reposez vos yeux",
+      "countdown": "Préparez-vous à détourner le regard",
+      "message": "Regardez quelque chose à 6 mètres pendant {0} secondes",
+      "background": "En arrière-plan · première pause dans {0} min"
+    },
+    {
+      "code": "de",
+      "label": "Deutsch",
+      "title": "Augen ausruhen",
+      "countdown": "Gleich in die Ferne schauen",
+      "message": "Schau {0} Sekunden lang auf etwas in 6 Metern Entfernung",
+      "background": "Läuft im Hintergrund · erste Pause in {0} Min."
+    },
+    {
+      "code": "nl",
+      "label": "Nederlands",
+      "title": "Rust je ogen",
+      "countdown": "Maak je klaar om weg te kijken",
+      "message": "Kijk {0} seconden naar iets op 6 meter afstand",
+      "background": "Draait op de achtergrond · eerste pauze over {0} min"
+    },
+    {
+      "code": "pl",
+      "label": "Polski",
+      "title": "Odpocznij oczom",
+      "countdown": "Przygotuj się, by spojrzeć w dal",
+      "message": "Patrz na coś w odległości 6 metrów przez {0} sek.",
+      "background": "Działa w tle · pierwsza przerwa za {0} min"
+    },
+    {
+      "code": "ru",
+      "label": "Русский",
+      "title": "Дайте глазам отдохнуть",
+      "countdown": "Приготовьтесь посмотреть вдаль",
+      "message": "Смотрите вдаль, на 6 метров, {0} сек.",
+      "background": "Работает в фоне · первый перерыв через {0} мин"
+    },
+    {
+      "code": "tr",
+      "label": "Türkçe",
+      "title": "Gözlerini dinlendir",
+      "countdown": "Uzağa bakmaya hazırlan",
+      "message": "6 metre uzaktaki bir şeye {0} saniye bak",
+      "background": "Arka planda çalışıyor · ilk mola {0} dk sonra"
+    },
+    {
+      "code": "ja",
+      "label": "日本語",
+      "title": "目を休めましょう",
+      "countdown": "遠くを見る準備をしてください",
+      "message": "6メートル先を{0}秒間見てください",
+      "background": "バックグラウンドで実行中 · 最初の休憩は{0}分後"
+    },
+    {
+      "code": "ko",
+      "label": "한국어",
+      "title": "눈을 쉬게 하세요",
+      "countdown": "멀리 볼 준비를 하세요",
+      "message": "6미터 떨어진 곳을 {0}초 동안 보세요",
+      "background": "백그라운드에서 실행 중 · 첫 휴식까지 {0}분"
+    },
+    {
+      "code": "zh-Hans",
+      "label": "简体中文",
+      "title": "让眼睛休息一下",
+      "countdown": "准备望向远处",
+      "message": "看向 6 米外的物体 {0} 秒",
+      "background": "正在后台运行 · {0} 分钟后第一次休息"
+    },
+    {
+      "code": "zh-Hant",
+      "label": "繁體中文",
+      "title": "讓眼睛休息一下",
+      "countdown": "準備望向遠處",
+      "message": "看向 6 公尺外的物體 {0} 秒",
+      "background": "正在背景執行 · {0} 分鐘後第一次休息"
+    },
+    {
+      "code": "hi",
+      "label": "हिन्दी",
+      "title": "आंखों को आराम दें",
+      "countdown": "दूर देखने के लिए तैयार हो जाइए",
+      "message": "6 मीटर दूर किसी चीज़ को {0} सेकंड तक देखें",
+      "background": "पृष्ठभूमि में चल रहा है · पहला ब्रेक {0} मिनट में"
+    },
+    {
+      "code": "ar",
+      "label": "العربية",
+      "title": "أرِح عينيك",
+      "countdown": "استعد للنظر بعيدًا",
+      "message": "انظر إلى شيء على بعد 6 أمتار لمدة {0} ثانية",
+      "background": "يعمل في الخلفية · أول استراحة بعد {0} دقيقة",
+      "rightToLeft": true
+    }
+  ]
+}
