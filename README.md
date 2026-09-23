@@ -144,10 +144,20 @@ screenshots. You still see it on your own screen.
 The four shipped themes are **Dark**, **Light**, **Warm** and **Minimal**, and
 **Customise...** under them opens an editor seeded from whichever is selected.
 It has a name, the six colours of the palette, and a live preview built from the
-card's own shapes, so the result is visible while editing. Saving writes to
-`%APPDATA%\EyeReminder\themes.json`, seeded from the shipped set so nothing is
-lost, and the new theme shows up as a chip straight away. **Delete** removes a
-theme from that file.
+card's own shapes, so the result is visible while editing. Clicking a swatch opens
+a picker with hue, saturation, brightness and opacity.
+
+The shipped themes are read only: editing one starts a copy, pre-named "Warm 2" and
+so on, so the originals are always there to go back to. **Reset colours** puts the
+fields back to the theme the editor was opened from, and **Delete** removes one of
+your own.
+
+Saving writes to `%APPDATA%\EyeReminder\themes.json`, seeded from the shipped set so
+nothing is lost, and the new theme shows up as a chip straight away.
+
+**Restore defaults**, at the bottom of the settings window, puts every setting back
+to the factory values and discards that file. It asks first, then applies and writes
+in one step rather than waiting for Save.
 
 The theme reaches the tray too: the right-click menu is painted from the palette,
 its highlighted row uses the accent colour, and the label on that row flips

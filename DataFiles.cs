@@ -16,6 +16,10 @@ internal static class DataFiles
     public static string OverrideFolder =>
         Path.GetDirectoryName(Settings.FilePath) ?? AppContext.BaseDirectory;
 
+    /// <summary>The copy compiled into the assembly, ignoring any user override.</summary>
+    public static Stream? OpenShipped(string folder, string fileName) =>
+        Assembly.GetExecutingAssembly().GetManifestResourceStream($"{AppInfo.Name}.{folder}.{fileName}");
+
     public static Stream? Open(string folder, string fileName)
     {
         var overridePath = Path.Combine(OverrideFolder, fileName);
@@ -36,7 +40,6 @@ internal static class DataFiles
             Log.Write($"Could not read the override {overridePath}", error);
         }
 
-        var resource = $"{AppInfo.Name}.{folder}.{fileName}";
-        return Assembly.GetExecutingAssembly().GetManifestResourceStream(resource);
+        return OpenShipped(folder, fileName);
     }
 }

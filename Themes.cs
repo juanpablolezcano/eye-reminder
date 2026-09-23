@@ -93,6 +93,79 @@ internal static class Themes
     /// <summary>True once the user has a set of their own, which is what makes themes editable.</summary>
     public static bool HasCustomFile => System.IO.File.Exists(CustomPath);
 
+    /// <summary>
+    /// Ids of the themes compiled into the app. These are read-only: editing one produces a
+    /// copy under a new name, so the four originals are always there to fall back on.
+    /// </summary>
+    private static readonly HashSet<string> ShippedIds = LoadShippedIds();
+
+    public static bool IsShipped(string? id) =>
+        !string.IsNullOrWhiteSpace(id) && ShippedIds.Contains(id.Trim());
+
+    private static HashSet<string> LoadShippedIds()
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            using var stream = DataFiles.OpenShipped("Themes", "themes.json");
+            if (stream is null) return ids;
+
+            var shipped = JsonSerializer.Deserialize<ThemeFile>(stream, JsonOptions);
+            foreach (var entry in shipped?.Themes ?? Array.Empty<ThemeEntry>())
+            {
+                if (!string.IsNullOrWhiteSpace(entry.Id)) ids.Add(entry.Id.Trim());
+            }
+        }
+        catch (JsonException error)
+        {
+            Log.Write("Could not read the shipped theme ids", error);
+        }
+        catch (IOException error)
+        {
+            Log.Write("Could not read the shipped theme ids", error);
+        }
+
+        return ids;
+    }
+
+    /// <summary>A name that is not taken yet, so copying "Warm" gives "Warm 2".</summary>
+    public static string UniqueName(string preferred)
+    {
+        var taken = All.Select(t => t.Caption).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (!taken.Contains(preferred)) return preferred;
+
+        for (var n = 2; n < 100; n++)
+        {
+            var candidate = $"{preferred} {n}";
+            if (!taken.Contains(candidate)) return candidate;
+        }
+
+        return preferred;
+    }
+
+    /// <summary>Restores the shipped set by discarding the user's file.</summary>
+    public static bool RestoreDefaults()
+    {
+        try
+        {
+            if (System.IO.File.Exists(CustomPath)) System.IO.File.Delete(CustomPath);
+
+            Reload();
+            return true;
+        }
+        catch (IOException error)
+        {
+            Log.Write($"Could not delete {CustomPath}", error);
+            return false;
+        }
+        catch (UnauthorizedAccessException error)
+        {
+            Log.Write($"Could not delete {CustomPath}", error);
+            return false;
+        }
+    }
+
     public static void Reload()
     {
         _file = LoadFile();

@@ -105,6 +105,7 @@ public partial class SettingsWindow : Window
         CancelButton.Content = Ui.T("btn.cancel");
         SaveButton.Content = Ui.T("btn.save");
         CustomiseButton.Content = Ui.T("btn.customise");
+        RestoreButton.Content = Ui.T("btn.restoreDefaults");
 
         if (_autoLanguageChip is not null) _autoLanguageChip.Content = Ui.T("lang.auto");
     }
@@ -416,12 +417,41 @@ public partial class SettingsWindow : Window
         };
 
         CustomiseButton.Click += (_, _) => CustomiseTheme();
+        RestoreButton.Click += (_, _) => RestoreDefaults();
 
         PreviewButton.Click += (_, _) => PreviewRequested?.Invoke(Collect());
 
         CancelButton.Click += (_, _) => Close();
 
         SaveButton.Click += (_, _) => Apply();
+    }
+
+    /// <summary>
+    /// Puts every setting back to the factory values and drops any customised themes, after
+    /// asking, since there is no undo for it.
+    /// </summary>
+    private void RestoreDefaults()
+    {
+        var answer = MessageBox.Show(this, Ui.T("dlg.restoreDefaults"), AppInfo.Name,
+            MessageBoxButton.OKCancel, MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.OK) return;
+
+        // Applied and written in one go. Deleting the theme file but leaving the settings
+        // pending until Save would leave the two halves out of step if Cancel followed.
+        Themes.RestoreDefaults();
+
+        var fresh = new Settings();
+        fresh.Save();
+
+        Ui.Use(fresh.Language);
+        _working.CopyFrom(fresh);
+
+        BuildOptionChips();
+        ApplyUiText();
+        LoadValues();
+
+        Saved?.Invoke(fresh.Clone());
     }
 
     /// <summary>Opens the theme editor seeded from whichever theme is selected right now.</summary>

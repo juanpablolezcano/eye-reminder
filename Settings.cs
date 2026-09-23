@@ -144,6 +144,15 @@ public sealed class Settings
     /// <summary>Working copy for the settings dialog, so Cancel leaves the live values untouched.</summary>
     public Settings Clone() => (Settings)MemberwiseClone();
 
+    /// <summary>Overwrites every field in place, used by "restore defaults".</summary>
+    public void CopyFrom(Settings other)
+    {
+        foreach (var property in typeof(Settings).GetProperties())
+        {
+            if (property.CanRead && property.CanWrite) property.SetValue(this, property.GetValue(other));
+        }
+    }
+
     public Settings Sanitized()
     {
         IntervalMinutes = Math.Clamp(IntervalMinutes, 0.25, 8 * 60);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -24,6 +25,8 @@ public partial class ThemeEditorWindow : Window
     public string? SavedId { get; private set; }
 
     private readonly string _originalId;
+    private readonly Palette _seedPalette;
+    private readonly bool _isCopy;
     private readonly List<(string Key, TextBox Input, Border Swatch)> _fields = new();
 
     public ThemeEditorWindow(ThemeOption seed, bool canDelete)
@@ -31,6 +34,10 @@ public partial class ThemeEditorWindow : Window
         InitializeComponent();
 
         _originalId = seed.Id;
+        _seedPalette = seed.Palette;
+
+        // The four shipped themes are read only: editing one starts a copy instead.
+        _isCopy = Themes.IsShipped(seed.Id);
 
         var accent = Themes.For(new Settings { Theme = seed.Id }).Accent;
         Icon = EyeIcon.ForWindow(System.Drawing.Color.FromArgb(accent.A, accent.R, accent.G, accent.B));
@@ -42,13 +49,15 @@ public partial class ThemeEditorWindow : Window
         CancelButton.Content = Ui.T("btn.cancel");
         SaveButton.Content = Ui.T("btn.save");
 
-        NameInput.Text = seed.Caption;
-        DeleteButton.IsEnabled = canDelete;
+        NameInput.Text = _isCopy ? Themes.UniqueName(seed.Caption) : seed.Caption;
+        DeleteButton.IsEnabled = canDelete && !_isCopy;
+        ResetButton.Content = Ui.T("btn.resetColours");
 
         BuildColourFields(seed.Palette);
 
         NameInput.TextChanged += (_, _) => UpdatePreview();
         CancelButton.Click += (_, _) => Close();
+        ResetButton.Click += (_, _) => ResetColours();
         DeleteButton.Click += (_, _) => Delete();
         SaveButton.Click += (_, _) => Save();
 
@@ -91,8 +100,13 @@ public partial class ThemeEditorWindow : Window
                 CornerRadius = new CornerRadius(7),
                 BorderBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)),
                 BorderThickness = new Thickness(1),
-                Margin = new Thickness(8, 0, 0, 0)
+                Margin = new Thickness(8, 0, 0, 0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                ToolTip = Ui.T("win.colourTitle")
             };
+
+            var slot = i;
+            swatch.MouseLeftButtonDown += (_, _) => PickColour(slot);
 
             var input = new TextBox
             {
@@ -118,6 +132,33 @@ public partial class ThemeEditorWindow : Window
             ColourRows.Children.Add(cell);
 
             _fields.Add((key, input, swatch));
+        }
+    }
+
+    /// <summary>Opens the picker on one slot, seeded with whatever that field holds now.</summary>
+    private void PickColour(int slot)
+    {
+        var (key, input, _) = _fields[slot];
+        var current = TryParse(input.Text, out var parsed) ? parsed : Colors.Black;
+
+        var chosen = ColourPickerWindow.Pick(this, current, Ui.T(key));
+        if (chosen is null) return;
+
+        input.Text = ToHex(chosen.Value);
+    }
+
+    /// <summary>Puts the six fields back to the theme this editor was opened from.</summary>
+    private void ResetColours()
+    {
+        Color[] seed =
+        {
+            _seedPalette.Background, _seedPalette.Title, _seedPalette.Accent,
+            _seedPalette.Border, _seedPalette.Message, _seedPalette.Track
+        };
+
+        for (var i = 0; i < _fields.Count && i < seed.Length; i++)
+        {
+            _fields[i].Input.Text = ToHex(seed[i]);
         }
     }
 
@@ -181,11 +222,9 @@ public partial class ThemeEditorWindow : Window
             return;
         }
 
-        // The id is what settings.json stores, so it stays stable while the label is free text.
-        var id = Themes.All.Any(t => t.Id.Equals(_originalId, StringComparison.OrdinalIgnoreCase))
-                 && name.Equals(Themes.All.First(t => t.Id.Equals(_originalId, StringComparison.OrdinalIgnoreCase)).Caption, StringComparison.Ordinal)
-            ? _originalId
-            : Slug(name);
+        // A shipped theme is never written over: it always saves under a fresh id. One of the
+        // user's own keeps its id so settings.json does not have to be rewritten.
+        var id = _isCopy ? UniqueId(Slug(name)) : _originalId;
 
         if (!Themes.Save(id, name, ReadPalette()))
         {
@@ -211,6 +250,20 @@ public partial class ThemeEditorWindow : Window
         SavedId = Themes.All[0].Id;
         DialogResult = true;
         Close();
+    }
+
+    /// <summary>Keeps a fresh id from colliding with a shipped one.</summary>
+    private static string UniqueId(string preferred)
+    {
+        if (!Themes.All.Any(t => t.Id.Equals(preferred, StringComparison.OrdinalIgnoreCase))) return preferred;
+
+        for (var n = 2; n < 100; n++)
+        {
+            var candidate = preferred + n.ToString(CultureInfo.InvariantCulture);
+            if (!Themes.All.Any(t => t.Id.Equals(candidate, StringComparison.OrdinalIgnoreCase))) return candidate;
+        }
+
+        return preferred;
     }
 
     /// <summary>Turns a display name into an id that is safe to keep in settings.json.</summary>

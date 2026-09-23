@@ -404,7 +404,10 @@
 
         <Border Grid.Row="1" Background="#FF101216" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Padding="26,14">
             <Grid>
-                <Button x:Name="PreviewButton" Style="{StaticResource Ghost}" HorizontalAlignment="Left"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button x:Name="PreviewButton" Style="{StaticResource Ghost}" Margin="0,0,10,0"/>
+                    <Button x:Name="RestoreButton" Style="{StaticResource Ghost}"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="CancelButton" Style="{StaticResource Ghost}" Margin="0,0,10,0"/>
                     <Button x:Name="SaveButton" Style="{StaticResource Primary}" IsDefault="True"/>
