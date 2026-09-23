@@ -308,6 +308,8 @@
 
                 <TextBlock x:Name="SecStyle" Style="{StaticResource H}"/>
                 <WrapPanel x:Name="ThemePanel"/>
+                <Button x:Name="CustomiseButton" Style="{StaticResource Ghost}"
+                        HorizontalAlignment="Left" Margin="0,2,0,0"/>
 
                 <TextBlock x:Name="LblAccent" Style="{StaticResource L}" Margin="0,10,0,8"/>
                 <WrapPanel x:Name="AccentPanel"/>

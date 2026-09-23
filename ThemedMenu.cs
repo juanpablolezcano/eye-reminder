@@ -38,13 +38,62 @@ internal sealed class ThemedMenu : ToolStripProfessionalRenderer
         }
     }
 
+    /// <summary>
+    /// Painted here rather than left to the base renderer, which reaches for the Windows
+    /// accent colour and would put a blue bar on an orange theme.
+    /// </summary>
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+    {
+        var bounds = new Rectangle(Point.Empty, e.Item.Size);
+
+        using var background = new SolidBrush(Opaque(_palette.Background));
+        e.Graphics.FillRectangle(background, bounds);
+
+        if (!e.Item.Selected || !e.Item.Enabled) return;
+
+        using var highlight = new SolidBrush(Opaque(_palette.Accent));
+        e.Graphics.FillRectangle(highlight, Rectangle.Inflate(bounds, -2, 0));
+    }
+
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
-        e.TextColor = e.Item.Enabled
-            ? Opaque(_palette.Title)
-            : Blend(_palette.Message, _palette.Background);
+        if (!e.Item.Enabled)
+        {
+            e.TextColor = Blend(_palette.Message, _palette.Background);
+        }
+        else if (e.Item.Selected)
+        {
+            // The row is filled with the accent, so the label has to read against that.
+            e.TextColor = Readable(Opaque(_palette.Accent));
+        }
+        else
+        {
+            e.TextColor = Opaque(_palette.Title);
+        }
 
         base.OnRenderItemText(e);
+    }
+
+    /// <summary>
+    /// Black or white, whichever has more contrast against the given fill. Uses the WCAG
+    /// relative luminance so a mid-tone accent flips at the right point.
+    /// </summary>
+    internal static Color Readable(Color background)
+    {
+        static double Channel(int value)
+        {
+            var v = value / 255.0;
+            return v <= 0.03928 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+        }
+
+        var luminance = 0.2126 * Channel(background.R)
+                      + 0.7152 * Channel(background.G)
+                      + 0.0722 * Channel(background.B);
+
+        // Contrast against white is (1.05 / (L + 0.05)); against black, ((L + 0.05) / 0.05).
+        return (1.05 / (luminance + 0.05)) >= ((luminance + 0.05) / 0.05)
+            ? Color.White
+            : Color.Black;
     }
 
     protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)

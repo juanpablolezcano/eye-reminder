@@ -141,9 +141,25 @@ screenshots. You still see it on your own screen.
 
 ## Themes
 
-`theme` names an entry in [Themes/themes.json](Themes/themes.json). Copy that file
-into `%APPDATA%\EyeReminder\` and it replaces the built-in set, which is how you
-add your own:
+The four shipped themes are **Dark**, **Light**, **Warm** and **Minimal**, and
+**Customise...** under them opens an editor seeded from whichever is selected.
+It has a name, the six colours of the palette, and a live preview built from the
+card's own shapes, so the result is visible while editing. Saving writes to
+`%APPDATA%\EyeReminder\themes.json`, seeded from the shipped set so nothing is
+lost, and the new theme shows up as a chip straight away. **Delete** removes a
+theme from that file.
+
+The theme reaches the tray too: the right-click menu is painted from the palette,
+its highlighted row uses the accent colour, and the label on that row flips
+between black and white by WCAG contrast so it stays readable on any accent. The
+tray icon is drawn in the accent as well. It is not an SVG, it is drawn with GDI+
+at runtime in [EyeIcon.cs](EyeIcon.cs), which is why it can be recoloured without
+shipping an asset.
+
+### By hand
+
+`theme` names an entry in [Themes/themes.json](Themes/themes.json). The editor
+writes that same format, so a theme can equally be added by editing the file:
 
 ```json
 {
@@ -157,11 +173,6 @@ add your own:
 Colours are `#AARRGGBB`, so the leading pair is opacity. Use `labelKey` instead of
 `label` to name a translated caption; a plain `label` shows as typed in every
 language. Any field you leave out falls back to the dark theme's value.
-
-The theme reaches the tray as well: the right-click menu is painted with the same
-palette, and the tray icon is drawn in the accent colour. The icon is not an SVG,
-it is drawn with GDI+ at runtime in [EyeIcon.cs](EyeIcon.cs), which is why it can
-be recoloured without shipping an asset.
 
 ## Startup notice
 

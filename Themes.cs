@@ -8,7 +8,7 @@ using ColorConverter = System.Windows.Media.ColorConverter;
 
 namespace EyeReminder;
 
-internal sealed record Palette(
+public sealed record Palette(
     Color Background,
     Color Border,
     Color Title,
@@ -20,19 +20,19 @@ internal sealed record Palette(
 /// One theme as it appears in the settings dialog. The caption is resolved on every read,
 /// not cached, so switching the interface language relabels the shipped themes.
 /// </summary>
-internal sealed record ThemeOption(string Id, string? Label, string? LabelKey, Palette Palette)
+public sealed record ThemeOption(string Id, string? Label, string? LabelKey, Palette Palette)
 {
     public string Caption => Captions.Resolve(Label, LabelKey, Id);
 }
 
 /// <summary>One preset accent. An empty hex means "leave the theme's own accent alone".</summary>
-internal sealed record AccentOption(string? Label, string? LabelKey, string Hex)
+public sealed record AccentOption(string? Label, string? LabelKey, string Hex)
 {
     public string Caption => Captions.Resolve(Label, LabelKey, Hex);
 }
 
 /// <summary>A literal label wins; otherwise the key is translated.</summary>
-internal static class Captions
+public static class Captions
 {
     public static string Resolve(string? label, string? labelKey, string fallback)
     {
@@ -62,6 +62,13 @@ internal static class Themes
     // declaration order, and a field further down is still null when the loader reads it.
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
     private static readonly ThemeOption BuiltinTheme = new(
         "Dark",
         null,
@@ -74,11 +81,87 @@ internal static class Themes
             Accent:     Hex("#FF7FD4C4"),
             Track:      Hex("#26FFFFFF")));
 
-    private static readonly ThemeFile File = LoadFile();
+    private static ThemeFile _file = LoadFile();
 
-    public static IReadOnlyList<ThemeOption> All { get; } = BuildThemes();
+    public static IReadOnlyList<ThemeOption> All { get; private set; } = BuildThemes();
 
-    public static IReadOnlyList<AccentOption> Accents { get; } = BuildAccents();
+    public static IReadOnlyList<AccentOption> Accents { get; private set; } = BuildAccents();
+
+    /// <summary>Where a customised set is kept, next to the user's settings.</summary>
+    private static string CustomPath => System.IO.Path.Combine(DataFiles.OverrideFolder, "themes.json");
+
+    /// <summary>True once the user has a set of their own, which is what makes themes editable.</summary>
+    public static bool HasCustomFile => System.IO.File.Exists(CustomPath);
+
+    public static void Reload()
+    {
+        _file = LoadFile();
+        All = BuildThemes();
+        Accents = BuildAccents();
+    }
+
+    /// <summary>
+    /// Adds or replaces a theme in the user's own file, seeding that file from the shipped
+    /// set the first time so the built-in themes are not lost by customising one.
+    /// </summary>
+    public static bool Save(string id, string label, Palette palette)
+    {
+        var entry = new ThemeEntry(
+            id, label, LabelKey: null,
+            Background: ToHex(palette.Background),
+            Border:     ToHex(palette.Border),
+            Title:      ToHex(palette.Title),
+            Message:    ToHex(palette.Message),
+            Accent:     ToHex(palette.Accent),
+            Track:      ToHex(palette.Track));
+
+        var themes = CurrentEntries();
+        var index = themes.FindIndex(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
+
+        if (index >= 0) themes[index] = entry;
+        else themes.Add(entry);
+
+        return Write(themes);
+    }
+
+    public static bool Remove(string id)
+    {
+        var themes = CurrentEntries();
+        themes.RemoveAll(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
+
+        return themes.Count > 0 && Write(themes);
+    }
+
+    private static List<ThemeEntry> CurrentEntries() =>
+        _file.Themes?.ToList() ?? new List<ThemeEntry>();
+
+    private static bool Write(List<ThemeEntry> themes)
+    {
+        try
+        {
+            var folder = System.IO.Path.GetDirectoryName(CustomPath);
+            if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
+
+            var payload = new ThemeFile(themes.ToArray(), _file.Accents);
+            System.IO.File.WriteAllText(CustomPath, JsonSerializer.Serialize(payload, WriteOptions));
+
+            Reload();
+            return true;
+        }
+        catch (IOException error)
+        {
+            Log.Write($"Could not write {CustomPath}", error);
+            return false;
+        }
+        catch (UnauthorizedAccessException error)
+        {
+            Log.Write($"Could not write {CustomPath}", error);
+            return false;
+        }
+    }
+
+    private static string ToHex(Color color) =>
+        $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
 
     public static Palette For(Settings settings)
     {
@@ -136,7 +219,7 @@ internal static class Themes
 
     private static ThemeOption[] BuildThemes()
     {
-        var themes = File.Themes?
+        var themes = _file.Themes?
             .Where(entry => !string.IsNullOrWhiteSpace(entry.Id))
             .Select(entry => new ThemeOption(
                 entry.Id!.Trim(),
@@ -156,7 +239,7 @@ internal static class Themes
 
     private static AccentOption[] BuildAccents()
     {
-        var accents = File.Accents?
+        var accents = _file.Accents?
             .Select(entry => new AccentOption(entry.Label, entry.LabelKey, entry.Hex ?? ""))
             .ToArray();
 

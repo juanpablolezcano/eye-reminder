@@ -104,6 +104,7 @@ public partial class SettingsWindow : Window
         PreviewButton.Content = Ui.T("btn.preview");
         CancelButton.Content = Ui.T("btn.cancel");
         SaveButton.Content = Ui.T("btn.save");
+        CustomiseButton.Content = Ui.T("btn.customise");
 
         if (_autoLanguageChip is not null) _autoLanguageChip.Content = Ui.T("lang.auto");
     }
@@ -414,11 +415,32 @@ public partial class SettingsWindow : Window
             Chime.Play(probe);
         };
 
+        CustomiseButton.Click += (_, _) => CustomiseTheme();
+
         PreviewButton.Click += (_, _) => PreviewRequested?.Invoke(Collect());
 
         CancelButton.Click += (_, _) => Close();
 
         SaveButton.Click += (_, _) => Apply();
+    }
+
+    /// <summary>Opens the theme editor seeded from whichever theme is selected right now.</summary>
+    private void CustomiseTheme()
+    {
+        var id = ReadChip(ThemePanel, Themes.All[0].Id);
+        var seed = Themes.All.FirstOrDefault(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) ?? Themes.All[0];
+
+        // Only a set the user already owns can have entries removed from it.
+        var editor = new ThemeEditorWindow(seed, canDelete: Themes.HasCustomFile && Themes.All.Count > 1)
+        {
+            Owner = this
+        };
+
+        if (editor.ShowDialog() != true) return;
+
+        BuildOptionChips();
+        SelectChip(ThemePanel, editor.SavedId ?? id);
+        SelectChip(PositionPanel, ReadChip(PositionPanel, "TopCenter"));
     }
 
     private void Apply()
