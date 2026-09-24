@@ -3,6 +3,8 @@
 A desktop overlay for the **20/20/20 rule**: every 20 minutes, look at something
 about 20 feet (6 m) away for 20 seconds.
 
+<img width="492" height="110" alt="image" src="https://github.com/user-attachments/assets/68113963-84d3-431c-818b-1a8d7cf17873" />
+
 The card floats above everything else and **never takes focus**, so it cannot
 interrupt what you are typing. Clicking it dismisses it, which is one gesture away
 when a reminder lands in the middle of a call.
@@ -320,19 +322,6 @@ MP3. Convert with `ffmpeg -i in.mp3 -acodec pcm_s16le -ar 44100 out.wav`.
 Free sources: [Pixabay](https://pixabay.com/sound-effects/search/notification/),
 [Mixkit](https://mixkit.co/free-sound-effects/notification/),
 [Freesound](https://freesound.org/search/?q=soft+chime&f=type:wav).
-
-## Releases
-
-Pushing a tag builds and publishes automatically
-([.github/workflows/release.yml](.github/workflows/release.yml)):
-
-```powershell
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-That produces the self-contained single file, strips everything but the `.exe`, and
-attaches it to a GitHub release. Every push to `main` also gets a plain build check.
 
 ## Contributing
 
