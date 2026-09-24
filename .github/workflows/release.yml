@@ -43,11 +43,22 @@ jobs:
           Remove-Item release\notification.wav -ErrorAction SilentlyContinue
           Get-ChildItem release
 
+      # Without this the release step would happily publish a release with no binary,
+      # leaving only the source archives GitHub attaches on its own.
+      - name: Check the binary is there
+        run: |
+          $exe = 'release\EyeReminder.exe'
+          if (-not (Test-Path $exe)) { throw "$exe was not produced" }
+          $size = (Get-Item $exe).Length
+          if ($size -lt 20MB) { throw "$exe is only $size bytes, so it is not self-contained" }
+          Write-Host "$exe is $([math]::Round($size / 1MB)) MB"
+
       - name: Create the release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: release/EyeReminder.exe
+          fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
             Download `EyeReminder.exe` and run it. Nothing to install: the .NET runtime is
