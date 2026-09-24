@@ -44,7 +44,7 @@ which keeps it correct on multi-monitor setups with mixed DPI.
 | `System.Media.SoundPlayer` | .NET runtime |
 | `System.Drawing` | .NET runtime; draws the tray icon at runtime |
 | `Microsoft.Win32.Registry` | .NET runtime; "start with Windows" |
-| `user32.dll`, `dwmapi.dll` | Windows, through P/Invoke |
+| `user32.dll`, `dwmapi.dll`, `shell32.dll` | Windows, through P/Invoke |
 
 `dotnet list package` reports no package the project asked for; the only entry is
 `Microsoft.NET.ILLink.Tasks`, which the SDK adds by itself and is a build-time
@@ -222,7 +222,7 @@ to English. Arabic renders with the whole card mirrored (RTL).
 In English the distance reads **20 feet**; everywhere else, **6 metres**.
 
 The interface follows the same setting: the tray menu and the entire settings
-window are translated ([Languages/ui.json](Languages/ui.json), 72 strings per
+window are translated ([Languages/ui.json](Languages/ui.json), 100 strings per
 language). Changing the language retranslates the open window in place.
 
 > The translations were not reviewed by native speakers. If any wording reads
@@ -236,9 +236,6 @@ so a single-file build carries every language with nothing extra to ship.
 
 A copy dropped in `%APPDATA%\EyeReminder\` wins over the embedded one, the same way
 themes do, so a translation can be fixed or a language added without rebuilding.
-
-A copy dropped in `%APPDATA%yeReminder` wins over the embedded one, the same
-way themes work, so a translation can be fixed without rebuilding.
 
 `overlay.json` is a flat list, one object per language:
 
