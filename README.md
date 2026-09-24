@@ -166,6 +166,12 @@ tray icon is drawn in the accent as well. It is not an SVG, it is drawn with GDI
 at runtime in [EyeIcon.cs](EyeIcon.cs), which is why it can be recoloured without
 shipping an asset.
 
+The one place that cannot follow the theme is the executable's own icon, since
+Windows reads that from a resource compiled into the file. [EyeReminder.ico](EyeReminder.ico)
+holds the same eye at seven sizes, from 16 to 256 pixels, on a dark tile: the
+transparent tray version is right on a taskbar but nearly invisible against a
+folder listing at 16 pixels.
+
 ### By hand
 
 `theme` names an entry in [Themes/themes.json](Themes/themes.json). The editor

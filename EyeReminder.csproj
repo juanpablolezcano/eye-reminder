@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>EyeReminder</AssemblyName>
+    <ApplicationIcon>EyeReminder.ico</ApplicationIcon>
     <RootNamespace>EyeReminder</RootNamespace>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <PublishSingleFile>true</PublishSingleFile>
