@@ -50,10 +50,10 @@ public sealed class Settings
     public bool Sound { get; set; } = true;
 
     /// <summary>
-    /// Sound file to play. Relative names resolve next to the executable. Empty, or a
-    /// path that does not exist, falls back to the synthesised chime.
+    /// Sound file to play. Relative names resolve next to the executable. Empty, which is
+    /// the default, or a path that does not exist, uses the synthesised chime.
     /// </summary>
-    public string SoundFile { get; set; } = AppInfo.DefaultSoundFile;
+    public string SoundFile { get; set; } = "";
 
     public double SoundVolume { get; set; } = 0.45;
 

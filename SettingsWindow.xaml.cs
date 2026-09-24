@@ -106,6 +106,7 @@ public partial class SettingsWindow : Window
         SaveButton.Content = Ui.T("btn.save");
         CustomiseButton.Content = Ui.T("btn.customise");
         RestoreButton.Content = Ui.T("btn.restoreDefaults");
+        SoundFileBox.Tag = Ui.T("hint.soundPlaceholder");
 
         if (_autoLanguageChip is not null) _autoLanguageChip.Content = Ui.T("lang.auto");
     }

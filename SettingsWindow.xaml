@@ -114,9 +114,22 @@
                     <ControlTemplate TargetType="TextBox">
                         <Border x:Name="B" CornerRadius="8" Background="#12FFFFFF"
                                 BorderBrush="#1FFFFFFF" BorderThickness="1">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            <Grid>
+                                <!-- Tag carries the placeholder, shown only while the box is empty -->
+                                <TextBlock x:Name="Placeholder"
+                                           Text="{TemplateBinding Tag}"
+                                           Margin="{TemplateBinding Padding}"
+                                           Foreground="#5CFFFFFF"
+                                           FontStyle="Italic"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
+                            </Trigger>
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="B" Property="BorderBrush" Value="#907FD4C4"/>
                             </Trigger>

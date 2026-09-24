@@ -19,7 +19,7 @@
   "allScreens": false,
   "opacity": 0.95,
   "sound": true,
-  "soundFile": "notification.wav",
+  "soundFile": "",
   "soundVolume": 0.45,
   "soundOnFinish": true
 }

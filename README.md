@@ -113,7 +113,7 @@ on first run.
 | `allScreens` | `false` | show it on every monitor |
 | `opacity` | `0.95` | card opacity |
 | `sound` | `true` | play a sound when the break starts |
-| `soundFile` | `notification.wav` | sound to play; see below |
+| `soundFile` | `""` | sound to play; empty uses the built-in chime |
 | `soundVolume` | `0.45` | volume of the built-in chime (0 to 1) |
 | `soundOnFinish` | `true` | replay the sound when the break ends |
 
@@ -295,16 +295,17 @@ executable ([StartupManager.cs](StartupManager.cs)). Unticking it removes the ke
 
 ## Sound
 
-`soundFile` takes either a bare file name, resolved next to the executable, or a
-full path. The default is `notification.wav`.
+`soundFile` is empty by default, which means the synthesised chime. The field in the
+settings window shows a translated placeholder rather than a file name, so it is
+clear that nothing has been chosen.
 
-**That file is not in this repository** (licensing), so a fresh clone has no
-`notification.wav`. That is fine: when the file is missing, [Chime.cs](Chime.cs)
-synthesises a soft two-note bell (E5 → B5, exponential decay) in memory instead.
+It takes either a bare file name, resolved next to the executable, or a full path.
+
+With nothing set, or when the file named cannot be found, [Chime.cs](Chime.cs)
+synthesises a soft two-note bell (E5 to B5, exponential decay) in memory instead.
 No Windows system sound is ever used: those share their timbre with error alerts.
 
-To use your own, drop a `.wav` next to the `.exe` and point `soundFile` at it, or
-press **Browse** in the settings window:
+To use your own, press **Browse** in the settings window, or name it directly:
 
 ```json
 { "soundFile": "C:\\Windows\\Media\\Windows Notify Calendar.wav" }
