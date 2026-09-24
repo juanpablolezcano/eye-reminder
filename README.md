@@ -334,6 +334,11 @@ git push origin v1.0.0
 That produces the self-contained single file, strips everything but the `.exe`, and
 attaches it to a GitHub release. Every push to `main` also gets a plain build check.
 
+## Contributing
+
+Changes reach `main` through pull requests only. See [CONTRIBUTING.md](CONTRIBUTING.md);
+translations and themes are the easiest place to start.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

@@ -1,0 +1,8 @@
+# Every file in the repository is owned by the maintainer, so any pull request
+# asks for their review automatically.
+#
+# This file only requests the review. Requiring it is a branch protection
+# setting: Settings > Rules > Rulesets (or Branches), with "Require review from
+# Code Owners" turned on for main.
+
+* @juanpablolezcano
