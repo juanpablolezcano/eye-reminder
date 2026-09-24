@@ -25,6 +25,10 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Printed so a runner without the expected SDK is obvious in the log.
+      - name: Show the toolchain
+        run: dotnet --info
+
       # Self-contained, so whoever downloads it needs no .NET runtime installed.
       - name: Publish
         run: >
